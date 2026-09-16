@@ -112,6 +112,16 @@ input, textarea, select { font-family: inherit; }
 .admin-toolbar h1 { font-family: var(--font-serif); font-size: 28px; font-weight: 600; margin: 0; color: var(--color-primary); }
 .admin-toolbar-hint { font-size: 13px; color: #6b6558; margin-top: 4px; }
 
+.admin-tabs { display: flex; gap: 8px; margin-bottom: 28px; border-bottom: 1px solid rgba(18,63,57,0.12); }
+.admin-tab {
+  background: none; border: none; border-bottom: 2px solid transparent;
+  padding: 10px 4px; margin-bottom: -1px; font-size: 14px; font-weight: 600;
+  color: #8a8272; cursor: pointer;
+}
+.admin-tab + .admin-tab { margin-left: 16px; }
+.admin-tab.is-active { color: var(--color-primary); border-bottom-color: var(--color-accent); }
+.tab-panel.hidden { display: none; }
+
 .property-list { display: flex; flex-direction: column; gap: 12px; }
 .property-empty { text-align: center; padding: 60px 20px; color: #6b6558; font-size: 14px; background: #fff; border-radius: 8px; border: 1px dashed rgba(18,63,57,0.2); }
 
@@ -199,3 +209,28 @@ input, textarea, select { font-family: inherit; }
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 .tag-chip:hover { background: rgba(217,178,109,0.15); border-color: var(--color-accent); }
+
+/* ── Marcas (partners) ── */
+.partner-add-card {
+  background: #fff; border-radius: 8px; padding: 20px; margin-bottom: 24px;
+  border: 1px solid rgba(18,63,57,0.08); box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  max-width: 420px;
+}
+.partner-list { display: flex; flex-direction: column; gap: 10px; }
+.partner-row {
+  display: flex; align-items: center; gap: 16px;
+  background: #ffffff; border-radius: 8px; padding: 10px 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1px solid rgba(18,63,57,0.08);
+}
+.partner-row.is-dragging { opacity: 0.4; }
+.partner-row.drag-over { border-top: 2px solid var(--color-accent); }
+.partner-logo-thumb {
+  width: 100px; height: 48px; object-fit: contain; background: #f7f4ec; border-radius: 6px; flex-shrink: 0;
+}
+.partner-info { flex: 1; min-width: 0; font-size: 14px; font-weight: 600; color: var(--color-dark-text); }
+
+/* ── Administradores ── */
+.invite-admin-card {
+  background: #fff; border-radius: 8px; padding: 24px; max-width: 420px;
+  border: 1px solid rgba(18,63,57,0.08); box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}

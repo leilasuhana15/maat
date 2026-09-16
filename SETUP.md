@@ -9,6 +9,9 @@ Sitio estático (HTML/CSS/JS puro, sin build) con Supabase como backend.
 3. En el menú lateral ve a **SQL Editor** → **New query**, pega el contenido completo de [`supabase/schema.sql`](supabase/schema.sql) y ejecútalo (▶ Run). Esto crea:
    - La tabla `properties` con sus políticas de seguridad (RLS).
    - El bucket de Storage `property-photos` (público para lectura, solo administradores autenticados pueden subir/borrar).
+   - La tabla `partners` (logos de empresas aliadas) y el bucket `partner-logos`, con las mismas reglas.
+   - Es seguro volver a correr este script completo si ya lo habías ejecutado antes (usa `if not exists` / `drop policy if exists`) — así obtienes las tablas nuevas sin duplicar nada.
+   - Si el bucket `property-photos` o `partner-logos` no aparece después de correr el script (puede pasar por permisos del SQL Editor), créalo manualmente en **Storage → New bucket** con ese nombre exacto y marca "Public bucket".
 4. Ve a **Project Settings → API** y copia:
    - **Project URL**
    - **anon public** key
@@ -37,23 +40,37 @@ El panel vive en `/admin`. Incluye una pantalla temporal de registro:
 - En `admin/index.html`, borra el bloque `<div id="view-signup" ...> ... </div>` y el enlace `¿Primera vez? Crear cuenta de administrador` en la vista de login.
 - En `assets/js/admin.js`, borra el bloque `signupForm.addEventListener(...)` y las líneas de `go-to-signup` / `go-to-login`.
 
-Si en el futuro necesitas otro administrador, créalo directamente desde el dashboard de Supabase: **Authentication → Users → Add user**.
+Si en el futuro necesitas otro administrador, puedes crearlo directamente desde el dashboard de Supabase (**Authentication → Users → Add user**) o, una vez desplegada la Edge Function del paso siguiente, invitarlo desde la pestaña **Administradores** del propio panel.
 
-## 4. Publicar el sitio
+## 4. Desplegar la función que invita administradores (opcional pero recomendado)
+
+El panel tiene una pestaña **Administradores** para invitar por correo a nuevas personas que puedan gestionar propiedades. Crear cuentas de Supabase Auth requiere una clave (`service_role`) que nunca debe estar en el navegador, así que esto corre en una Edge Function del lado de Supabase:
+
+1. En el dashboard de Supabase, ve a **Edge Functions** → **Deploy a new function**.
+2. Nombre exacto: `invite-admin`.
+3. Pega el contenido completo de [`supabase/functions/invite-admin/index.ts`](supabase/functions/invite-admin/index.ts).
+4. Despliega. No necesitas configurar variables de entorno: `SUPABASE_URL`, `SUPABASE_ANON_KEY` y `SUPABASE_SERVICE_ROLE_KEY` ya están disponibles automáticamente para toda función.
+5. Prueba desde el panel: `/admin` → pestaña **Administradores** → ingresa un correo → **Enviar invitación**. La persona invitada recibe un correo de Supabase para crear su contraseña; al hacerlo, ya puede iniciar sesión en `/admin` con los mismos permisos que cualquier administrador.
+
+Si no despliegas esta función, esa pestaña simplemente mostrará un error al intentar invitar — el resto del panel (propiedades, marcas) sigue funcionando igual.
+
+## 5. Publicar el sitio
 
 Sube toda la carpeta a tu hosting estático (Hostinger, Netlify, Vercel, etc.). No requiere build ni Node — son archivos HTML/CSS/JS servidos tal cual. Asegúrate de que `/admin` quede accesible pero fuera del sitemap (ya tiene `<meta name="robots" content="noindex, nofollow">`).
 
 ## Estructura del proyecto
 
 ```
-index.html                   → landing pública
-admin/index.html             → panel de administración
-assets/css/style.css         → estilos del landing
-assets/css/admin.css         → estilos del panel
-assets/js/supabase-config.js → credenciales de Supabase (editar aquí)
-assets/js/main.js            → lógica del landing (fetch propiedades, carrusel 3D, modal)
-assets/js/admin.js           → lógica del panel (auth, CRUD, fotos, reordenar)
-supabase/schema.sql          → esquema de base de datos + políticas + bucket
+index.html                          → landing pública
+admin/index.html                    → panel de administración
+assets/css/style.css                → estilos del landing
+assets/css/admin.css                → estilos del panel
+assets/js/supabase-config.js        → credenciales de Supabase (editar aquí)
+assets/js/bolivia-cities.js         → lista de ciudades de Bolivia (landing + admin)
+assets/js/main.js                   → lógica del landing (fetch propiedades, carrusel 3D, modal, franja de marcas)
+assets/js/admin.js                  → lógica del panel (auth, CRUD propiedades, marcas, invitar admins)
+supabase/schema.sql                 → esquema de base de datos + políticas + buckets
+supabase/functions/invite-admin/    → Edge Function para invitar administradores (ver paso 4)
 ```
 
 ## Cómo funciona
@@ -61,5 +78,7 @@ supabase/schema.sql          → esquema de base de datos + políticas + bucket
 - El landing solo muestra propiedades con `status = 'available'`, ordenadas por `sort_order`.
 - El carrusel 3D en anillo reutiliza exactamente la física del diseño original (12 tarjetas, radio 520px, rotación automática + arrastre).
 - El modal de detalle arma el link de WhatsApp dinámicamente con el título y ubicación de la propiedad, e incluye navegación entre fotos cuando hay más de una.
-- En el panel, arrastra las filas por el ícono `⠿` para reordenar cómo aparecen en el landing (actualiza `sort_order`).
-- Al eliminar una propiedad o una foto, también se borra el archivo correspondiente del bucket de Storage.
+- La franja de logos ("empresas con las que trabajamos") debajo del hero se alimenta de la tabla `partners`; si está vacía, la franja simplemente no se muestra. Se administra desde la pestaña **Marcas** del panel.
+- En el panel, arrastra las filas por el ícono `⠿` para reordenar cómo aparecen en el landing (actualiza `sort_order`), tanto en Propiedades como en Marcas.
+- Al eliminar una propiedad, un logo, o una foto individual, también se borra el archivo correspondiente del bucket de Storage.
+- La pestaña **Administradores** invita nuevos usuarios por correo (requiere desplegar la Edge Function del paso 4); cualquier administrador tiene los mismos permisos, no hay roles distintos.

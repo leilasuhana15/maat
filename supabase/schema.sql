@@ -88,3 +88,77 @@ create policy "authenticated can delete property photos"
   on storage.objects for delete
   to authenticated
   using (bucket_id = 'property-photos');
+
+-- ── Tabla partners (logos de empresas aliadas, franja del landing) ──
+create table if not exists public.partners (
+  id           uuid primary key default gen_random_uuid(),
+  name         text not null default '',
+  logo_url     text not null,
+  sort_order   integer not null default 0,
+  created_at   timestamptz not null default now()
+);
+
+create index if not exists partners_sort_order_idx on public.partners (sort_order);
+
+alter table public.partners enable row level security;
+
+-- El landing público puede leer todos los logos (no hay estado "oculto")
+drop policy if exists "public can read partners" on public.partners;
+create policy "public can read partners"
+  on public.partners for select
+  to anon
+  using (true);
+
+drop policy if exists "authenticated can read all partners" on public.partners;
+create policy "authenticated can read all partners"
+  on public.partners for select
+  to authenticated
+  using (true);
+
+drop policy if exists "authenticated can insert partners" on public.partners;
+create policy "authenticated can insert partners"
+  on public.partners for insert
+  to authenticated
+  with check (true);
+
+drop policy if exists "authenticated can update partners" on public.partners;
+create policy "authenticated can update partners"
+  on public.partners for update
+  to authenticated
+  using (true)
+  with check (true);
+
+drop policy if exists "authenticated can delete partners" on public.partners;
+create policy "authenticated can delete partners"
+  on public.partners for delete
+  to authenticated
+  using (true);
+
+-- ── Storage: bucket de logos de empresas aliadas ─────────────────
+insert into storage.buckets (id, name, public)
+values ('partner-logos', 'partner-logos', true)
+on conflict (id) do nothing;
+
+drop policy if exists "public can view partner logos" on storage.objects;
+create policy "public can view partner logos"
+  on storage.objects for select
+  to public
+  using (bucket_id = 'partner-logos');
+
+drop policy if exists "authenticated can upload partner logos" on storage.objects;
+create policy "authenticated can upload partner logos"
+  on storage.objects for insert
+  to authenticated
+  with check (bucket_id = 'partner-logos');
+
+drop policy if exists "authenticated can update partner logos" on storage.objects;
+create policy "authenticated can update partner logos"
+  on storage.objects for update
+  to authenticated
+  using (bucket_id = 'partner-logos');
+
+drop policy if exists "authenticated can delete partner logos" on storage.objects;
+create policy "authenticated can delete partner logos"
+  on storage.objects for delete
+  to authenticated
+  using (bucket_id = 'partner-logos');

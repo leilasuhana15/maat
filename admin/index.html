@@ -82,15 +82,67 @@
   </div>
 
   <div class="admin-main">
-    <div class="admin-toolbar">
-      <div>
-        <h1>Propiedades</h1>
-        <p class="admin-toolbar-hint">Arrastra las filas por el ícono ⠿ para reordenar cómo aparecen en el landing.</p>
-      </div>
-      <button id="new-property-btn" class="btn btn-accent">+ Nueva propiedad</button>
+    <div class="admin-tabs">
+      <button type="button" class="admin-tab is-active" data-tab="properties">Propiedades</button>
+      <button type="button" class="admin-tab" data-tab="partners">Marcas</button>
+      <button type="button" class="admin-tab" data-tab="admins">Administradores</button>
     </div>
 
-    <div id="property-list" class="property-list"></div>
+    <div id="tab-panel-properties" class="tab-panel">
+      <div class="admin-toolbar">
+        <div>
+          <h1>Propiedades</h1>
+          <p class="admin-toolbar-hint">Arrastra las filas por el ícono ⠿ para reordenar cómo aparecen en el landing.</p>
+        </div>
+        <button id="new-property-btn" class="btn btn-accent">+ Nueva propiedad</button>
+      </div>
+
+      <div id="property-list" class="property-list"></div>
+    </div>
+
+    <div id="tab-panel-partners" class="tab-panel hidden">
+      <div class="admin-toolbar">
+        <div>
+          <h1>Marcas</h1>
+          <p class="admin-toolbar-hint">Logos de empresas aliadas que aparecen en la franja del landing. Arrastra por ⠿ para reordenar.</p>
+        </div>
+      </div>
+
+      <div class="partner-add-card">
+        <div class="field">
+          <label for="partner-name-input">Nombre (opcional, para el texto alternativo)</label>
+          <input type="text" id="partner-name-input" placeholder="Ej: RE/MAX">
+        </div>
+        <div class="field">
+          <label>Logo</label>
+          <div id="partner-dropzone" class="photo-dropzone">Haz clic o arrastra una imagen aquí</div>
+          <input type="file" id="partner-photo-input" accept="image/*" style="display:none;">
+        </div>
+        <p id="partner-add-error" class="form-error hidden"></p>
+      </div>
+
+      <div id="partner-list" class="partner-list"></div>
+    </div>
+
+    <div id="tab-panel-admins" class="tab-panel hidden">
+      <div class="admin-toolbar">
+        <div>
+          <h1>Administradores</h1>
+          <p class="admin-toolbar-hint">Invita a una persona para que pueda entrar a este panel y gestionar propiedades. Recibirá un correo para crear su contraseña.</p>
+        </div>
+      </div>
+
+      <form id="invite-admin-form" class="invite-admin-card">
+        <div class="field">
+          <label for="invite-email">Correo del nuevo administrador</label>
+          <input type="email" id="invite-email" required placeholder="nombre@ejemplo.com">
+        </div>
+        <p id="invite-admin-error" class="form-error hidden"></p>
+        <p id="invite-admin-success" class="auth-banner hidden"></p>
+        <button type="submit" id="invite-admin-submit" class="btn btn-accent">Enviar invitación</button>
+      </form>
+      <p class="admin-toolbar-hint">Para quitar acceso a un administrador existente, hazlo desde el dashboard de Supabase: Authentication → Users.</p>
+    </div>
   </div>
 </div>
 

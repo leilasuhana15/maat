@@ -293,3 +293,25 @@ document.addEventListener('keydown', (e) => {
 });
 
 loadProperties();
+
+/* ── Franja de logos de empresas aliadas ── */
+async function loadPartners() {
+  const track = document.getElementById('partners-track');
+  const { data, error } = await supabaseClient
+    .from('partners')
+    .select('*')
+    .order('sort_order', { ascending: true });
+
+  if (error || !data || !data.length) {
+    document.querySelector('.partners-strip')?.remove();
+    return;
+  }
+
+  const logosHtml = data.map((p) =>
+    '<img src="' + escapeHtml(p.logo_url) + '" alt="' + escapeHtml(p.name || 'Empresa aliada') + '" loading="lazy">'
+  ).join('');
+  // El track se duplica una vez para que la animación de scroll sea continua (sin salto visible).
+  track.innerHTML = logosHtml + logosHtml;
+}
+
+loadPartners();

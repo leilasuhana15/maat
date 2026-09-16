@@ -503,4 +503,169 @@ document.querySelectorAll('.tag-chip').forEach((btn) => {
   });
 });
 
+/* ── Tabs ── */
+document.querySelectorAll('.admin-tab').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.admin-tab').forEach((b) => b.classList.toggle('is-active', b === btn));
+    document.querySelectorAll('.tab-panel').forEach((panel) => {
+      panel.classList.toggle('hidden', panel.id !== 'tab-panel-' + btn.dataset.tab);
+    });
+    if (btn.dataset.tab === 'partners') loadPartners();
+  });
+});
+
+/* ── Marcas (logos de empresas aliadas) ── */
+let partners = [];
+let partnerDragSrcId = null;
+const partnerListEl = document.getElementById('partner-list');
+const partnerNameInput = document.getElementById('partner-name-input');
+const partnerDropzone = document.getElementById('partner-dropzone');
+const partnerPhotoInput = document.getElementById('partner-photo-input');
+const partnerAddError = document.getElementById('partner-add-error');
+const PARTNER_LOGOS_BUCKET = 'partner-logos';
+
+async function loadPartners() {
+  partnerListEl.innerHTML = '<p class="property-empty">Cargando…</p>';
+  const { data, error } = await supabaseClient.from('partners').select('*').order('sort_order', { ascending: true });
+  if (error) {
+    partnerListEl.innerHTML = '<p class="property-empty">Error al cargar: ' + escapeHtml(error.message) + '</p>';
+    return;
+  }
+  partners = data || [];
+  renderPartnerList();
+}
+
+function renderPartnerList() {
+  if (!partners.length) {
+    partnerListEl.innerHTML = '<p class="property-empty">Aún no hay logos. Agrega el primero arriba.</p>';
+    return;
+  }
+  partnerListEl.innerHTML = '';
+  partners.forEach((partner) => {
+    const row = document.createElement('div');
+    row.className = 'partner-row';
+    row.draggable = true;
+    row.dataset.id = partner.id;
+    row.innerHTML =
+      '<span class="property-drag-handle" title="Arrastra para reordenar">⠿</span>' +
+      '<img class="partner-logo-thumb" src="' + escapeHtml(partner.logo_url) + '" alt="">' +
+      '<span class="partner-info">' + escapeHtml(partner.name || '(sin nombre)') + '</span>' +
+      '<button type="button" class="btn btn-danger btn-sm" data-action="delete">Eliminar</button>';
+
+    row.querySelector('[data-action="delete"]').addEventListener('click', () => deletePartner(partner));
+
+    row.addEventListener('dragstart', (e) => {
+      partnerDragSrcId = partner.id;
+      row.classList.add('is-dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    row.addEventListener('dragend', () => row.classList.remove('is-dragging'));
+    row.addEventListener('dragover', (e) => { e.preventDefault(); row.classList.add('drag-over'); });
+    row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
+    row.addEventListener('drop', (e) => {
+      e.preventDefault();
+      row.classList.remove('drag-over');
+      if (partnerDragSrcId && partnerDragSrcId !== partner.id) reorderPartners(partnerDragSrcId, partner.id);
+    });
+
+    partnerListEl.appendChild(row);
+  });
+}
+
+async function reorderPartners(srcId, targetId) {
+  const srcIndex = partners.findIndex((p) => p.id === srcId);
+  const targetIndex = partners.findIndex((p) => p.id === targetId);
+  if (srcIndex === -1 || targetIndex === -1) return;
+  const [moved] = partners.splice(srcIndex, 1);
+  partners.splice(targetIndex, 0, moved);
+  partners.forEach((p, i) => { p.sort_order = i; });
+  renderPartnerList();
+  await Promise.all(partners.map((p) => supabaseClient.from('partners').update({ sort_order: p.sort_order }).eq('id', p.id)));
+}
+
+function partnerStoragePathFromUrl(url) {
+  const marker = '/object/public/' + PARTNER_LOGOS_BUCKET + '/';
+  const idx = url.indexOf(marker);
+  if (idx === -1) return null;
+  return decodeURIComponent(url.slice(idx + marker.length));
+}
+
+async function deletePartner(partner) {
+  if (!confirm('¿Eliminar el logo "' + (partner.name || 'sin nombre') + '"?')) return;
+  const path = partnerStoragePathFromUrl(partner.logo_url);
+  if (path) { try { await supabaseClient.storage.from(PARTNER_LOGOS_BUCKET).remove([path]); } catch (err) { /* best effort */ } }
+  const { error } = await supabaseClient.from('partners').delete().eq('id', partner.id);
+  if (error) { alert('Error al eliminar: ' + error.message); return; }
+  loadPartners();
+}
+
+async function addPartner(file) {
+  partnerAddError.classList.add('hidden');
+  const name = partnerNameInput.value.trim();
+  const id = crypto.randomUUID();
+  const path = id + '/' + Date.now() + '-' + sanitizeFilename(file.name);
+
+  const placeholder = document.createElement('div');
+  placeholder.className = 'photo-thumb is-uploading';
+  partnerDropzone.insertAdjacentElement('afterend', placeholder);
+
+  const { error: uploadError } = await supabaseClient.storage.from(PARTNER_LOGOS_BUCKET).upload(path, file);
+  placeholder.remove();
+  if (uploadError) {
+    partnerAddError.textContent = 'Error al subir el logo: ' + uploadError.message;
+    partnerAddError.classList.remove('hidden');
+    return;
+  }
+  const { data } = supabaseClient.storage.from(PARTNER_LOGOS_BUCKET).getPublicUrl(path);
+  const sortOrder = partners.length ? Math.max(...partners.map((p) => p.sort_order)) + 1 : 0;
+  const { error } = await supabaseClient.from('partners').insert({ id, name, logo_url: data.publicUrl, sort_order: sortOrder });
+  if (error) {
+    partnerAddError.textContent = 'Error al guardar: ' + error.message;
+    partnerAddError.classList.remove('hidden');
+    return;
+  }
+  partnerNameInput.value = '';
+  loadPartners();
+}
+
+partnerDropzone.addEventListener('click', () => partnerPhotoInput.click());
+partnerPhotoInput.addEventListener('change', () => {
+  if (partnerPhotoInput.files[0]) addPartner(partnerPhotoInput.files[0]);
+  partnerPhotoInput.value = '';
+});
+partnerDropzone.addEventListener('dragover', (e) => { e.preventDefault(); partnerDropzone.classList.add('is-dragover'); });
+partnerDropzone.addEventListener('dragleave', () => partnerDropzone.classList.remove('is-dragover'));
+partnerDropzone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  partnerDropzone.classList.remove('is-dragover');
+  if (e.dataTransfer.files[0]) addPartner(e.dataTransfer.files[0]);
+});
+
+/* ── Administradores: invitar nuevos usuarios (vía Edge Function, ver supabase/functions/invite-admin) ── */
+document.getElementById('invite-admin-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const errorEl = document.getElementById('invite-admin-error');
+  const successEl = document.getElementById('invite-admin-success');
+  errorEl.classList.add('hidden');
+  successEl.classList.add('hidden');
+
+  const email = document.getElementById('invite-email').value.trim();
+  const btn = document.getElementById('invite-admin-submit');
+  btn.disabled = true;
+
+  const { data, error } = await supabaseClient.functions.invoke('invite-admin', { body: { email } });
+
+  btn.disabled = false;
+
+  if (error || (data && data.error)) {
+    errorEl.textContent = 'Error al invitar: ' + (data && data.error ? data.error : error.message);
+    errorEl.classList.remove('hidden');
+    return;
+  }
+
+  successEl.textContent = 'Invitación enviada a ' + email + '.';
+  successEl.classList.remove('hidden');
+  document.getElementById('invite-admin-form').reset();
+});
+
 init();
