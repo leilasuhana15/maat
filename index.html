@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MAAT Firma Legal — Asesoría inmobiliaria en Bolivia</title>
+<meta name="description" content="Asesoría legal integral para la compra-venta de bienes inmuebles en Bolivia. Certeza legal, resultados en 30 días.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="navbar-inner">
+    <a href="#hero" class="navbar-logo">
+      <span class="navbar-logo-main">MAAT</span>
+      <span class="navbar-logo-sub">FIRMA LEGAL</span>
+    </a>
+
+    <button class="navbar-burger" aria-label="Abrir menú">
+      <span></span><span></span><span></span>
+    </button>
+
+    <div class="navbar-links">
+      <a href="#hero" class="navbar-link">Inicio</a>
+      <a href="#propiedades" class="navbar-link">Propiedades</a>
+      <a href="#garantias" class="navbar-link">Garantías</a>
+      <a href="#pricing" class="navbar-link">Honorarios</a>
+      <a href="#footer" class="navbar-link">Contacto</a>
+      <a href="#" data-whatsapp-generic target="_blank" rel="noopener" class="cta-button"><span>Solicitar evaluación</span></a>
+    </div>
+  </div>
+
+  <div class="navbar-mobile-panel">
+    <a href="#hero" class="navbar-mobile-link">Inicio</a>
+    <a href="#propiedades" class="navbar-mobile-link">Propiedades</a>
+    <a href="#garantias" class="navbar-mobile-link">Garantías</a>
+    <a href="#pricing" class="navbar-mobile-link">Honorarios</a>
+    <a href="#footer" class="navbar-mobile-link">Contacto</a>
+    <a href="#" data-whatsapp-generic target="_blank" rel="noopener" class="cta-button" style="width:100%;margin-top:12px;"><span>Solicitar evaluación</span></a>
+  </div>
+</nav>
+
+<section id="hero" class="hero">
+  <div class="hero-overlay"></div>
+  <div class="hero-inner">
+    <div class="hero-content">
+      <div class="hero-badge">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D9B26D" stroke-width="1.5" style="flex-shrink:0;">
+          <line x1="12" y1="3" x2="12" y2="21"></line>
+          <line x1="4" y1="7" x2="20" y2="7"></line>
+          <path d="M4 7 L2 13 A4 4 0 0 0 10 13 L8 7 Z"></path>
+          <path d="M20 7 L18 13 A4 4 0 0 0 26 13 L24 7 Z" transform="translate(-8,0)"></path>
+        </svg>
+        <span>Resultados en máximo 30 días</span>
+      </div>
+      <h1 class="hero-title">Certeza legal.<br>Resultados en 30 días.</h1>
+      <p class="hero-subtext">Asesoría integral para la compra-venta de bienes inmuebles. Verificamos cada documento antes de que usted firme, para que su decisión esté completamente respaldada.</p>
+      <div class="hero-cta-wrap">
+        <a href="#" data-whatsapp-generic target="_blank" rel="noopener" class="cta-button cta-button--block"><span>Solicitar evaluación</span></a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="propiedades" class="propiedades-section">
+  <div class="propiedades-inner reveal">
+    <h2 class="section-heading section-heading--light">Propiedades disponibles</h2>
+    <p class="section-sub section-sub--light">Seleccione un inmueble para conocer sus características y consultar directamente por WhatsApp.</p>
+    <div class="city-filters" id="city-filters"></div>
+    <div class="ring-stage" id="ring-stage"></div>
+  </div>
+</section>
+
+<div class="property-modal-backdrop hidden" id="property-modal-backdrop">
+  <div class="property-modal" id="property-modal" onclick="event.stopPropagation()"></div>
+</div>
+
+<section id="features" class="features-section">
+  <h2 class="section-heading section-heading--light">Qué incluye nuestra asesoría</h2>
+  <div class="reveal">
+    <p class="section-sub section-sub--light" style="margin-top:40px;">Un servicio integral que cubre cada etapa de la compra-venta de su inmueble.</p>
+    <div class="features-grid">
+      <div class="feature-item"><span class="feature-icon">01</span><div><h4 class="feature-title">Verificación registral y catastral</h4><p class="feature-text">Confirmamos la situación exacta del inmueble ante los registros públicos correspondientes.</p></div></div>
+      <div class="feature-item"><span class="feature-icon">02</span><div><h4 class="feature-title">Revisión de títulos y cadena de propiedad</h4><p class="feature-text">Trazamos el historial completo de titularidad para descartar vicios o contingencias.</p></div></div>
+      <div class="feature-item"><span class="feature-icon">03</span><div><h4 class="feature-title">Elaboración y revisión de contratos</h4><p class="feature-text">Redactamos y auditamos cada cláusula para proteger sus intereses de forma equilibrada.</p></div></div>
+      <div class="feature-item"><span class="feature-icon">04</span><div><h4 class="feature-title">Coordinación notarial y de escrituración</h4><p class="feature-text">Gestionamos directamente con la notaría los tiempos y requisitos de firma.</p></div></div>
+      <div class="feature-item"><span class="feature-icon">05</span><div><h4 class="feature-title">Due diligence de gravámenes y afectaciones</h4><p class="feature-text">Identificamos hipotecas, embargos o cargas antes de que representen un riesgo.</p></div></div>
+      <div class="feature-item"><span class="feature-icon">06</span><div><h4 class="feature-title">Acompañamiento hasta el cierre</h4><p class="feature-text">Le asistimos hasta la entrega final de la escritura debidamente inscrita.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="garantias" class="garantias-section">
+  <h2 class="section-heading section-heading--light" style="margin-bottom:56px;">Garantías que respaldan su decisión</h2>
+  <div class="reveal">
+    <div class="trust-grid">
+      <div class="trust-card">
+        <span class="trust-stat">30 días</span>
+        <p class="trust-text">Como plazo estándar de resolución; hasta 3 meses en casos de mayor complejidad registral.</p>
+      </div>
+      <div class="trust-card">
+        <span class="trust-stat">+500</span>
+        <p class="trust-text">Alianzas estratégicas con notarías e instituciones registrales para agilizar cada trámite.</p>
+      </div>
+      <div class="trust-card">
+        <span class="trust-stat">Vigencia Actual</span>
+        <p class="trust-text">Marco legal sólido: cada operación se sustenta en la normativa civil y registral vigente.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="testimonials-section">
+  <div class="reveal">
+    <h2 class="section-heading section-heading--dark" style="margin-bottom:56px;">La experiencia de quienes confiaron en nosotros</h2>
+    <div class="testimonials-grid">
+      <div class="testimonial-card">
+        <p class="testimonial-quote">"Cada paso fue explicado con claridad. Nunca sentí presión, solo respaldo."</p>
+        <p class="testimonial-name">Rosa Elena Campos</p>
+        <p class="testimonial-role">Vendedora de inmueble</p>
+      </div>
+      <div class="testimonial-card">
+        <p class="testimonial-quote">"La verificación de documentos fue exhaustiva. Firmé con total tranquilidad."</p>
+        <p class="testimonial-name">Jorge Alberto Miranda</p>
+        <p class="testimonial-role">Comprador</p>
+      </div>
+      <div class="testimonial-card">
+        <p class="testimonial-quote">"Un trato serio y ordenado. Los plazos se cumplieron exactamente como se acordó."</p>
+        <p class="testimonial-name">Dr. Fernando Ríos Paredes</p>
+        <p class="testimonial-role">Notario asociado</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="pricing" class="pricing-section">
+  <div class="pricing-inner reveal">
+    <h2 class="section-heading section-heading--light">Nosotros nos ocupamos de todo.</h2>
+    <p class="pricing-text">Sin pagos por adelantado, sin costos ocultos y sin sorpresas: Venda su inmueble sin asumir costos adicionales ni preocuparse por trámites, gestión o negociación. Tras una evaluación inicial, nuestros honorarios se integran al precio final de venta, para que usted reciba exactamente el monto acordado por su propiedad.</p>
+    <a href="#" data-whatsapp-generic target="_blank" rel="noopener" class="cta-button cta-button--block" style="margin-top:8px;"><span>Solicitar evaluación</span></a>
+    <p class="pricing-note">La evaluación inicial no tiene costo.</p>
+  </div>
+</section>
+
+<footer id="footer" class="footer">
+  <div class="footer-inner">
+    <div class="footer-top">
+      <div>
+        <span class="footer-logo">MAAT</span>
+        <p class="footer-logo-sub">FIRMA LEGAL</p>
+        <p class="footer-name">Dra. Silvana A. Vásquez Uribe</p>
+      </div>
+      <div class="footer-contact">
+        <span class="footer-contact-label">CONTACTO</span>
+        <a href="mailto:maatfirmalegal.sv@gmail.com" class="footer-link">maatfirmalegal.sv@gmail.com</a>
+        <a href="tel:+59170613687" class="footer-link">70613687</a>
+        <span class="footer-city">La Paz, Bolivia</span>
+      </div>
+    </div>
+    <p class="footer-copy">© 2026 MAAT Firma Legal. Todos los Derechos Reservados.</p>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="assets/js/supabase-config.js"></script>
+<script src="assets/js/main.js"></script>
+</body>
+</html>

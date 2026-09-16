@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panel de administración — MAAT Firma Legal</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/admin.css">
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="view-login" class="auth-screen hidden">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <span class="auth-logo-main">MAAT</span>
+      <span class="auth-logo-sub">FIRMA LEGAL — ADMIN</span>
+    </div>
+    <h1 class="auth-title">Iniciar sesión</h1>
+    <div id="login-error" class="auth-error hidden"></div>
+    <form id="login-form">
+      <div class="field">
+        <label for="login-email">Correo</label>
+        <input type="email" id="login-email" required autocomplete="username">
+      </div>
+      <div class="field">
+        <label for="login-password">Contraseña</label>
+        <input type="password" id="login-password" required autocomplete="current-password">
+      </div>
+      <button type="submit" id="login-submit" class="btn btn-primary btn-block">Entrar</button>
+    </form>
+    <p class="auth-switch">¿Primera vez? <a id="go-to-signup">Crear cuenta de administrador</a></p>
+  </div>
+</div>
+
+<!-- SIGNUP (temporal) -->
+<div id="view-signup" class="auth-screen hidden">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <span class="auth-logo-main">MAAT</span>
+      <span class="auth-logo-sub">FIRMA LEGAL — ADMIN</span>
+    </div>
+    <h1 class="auth-title">Crear cuenta de administrador</h1>
+    <div class="auth-banner">⚠️ Pantalla temporal. Úsala solo para crear tu primer usuario y luego elimina la carpeta <code>admin</code> de este flujo de registro (o pide que se quite del código) para que nadie más pueda crear cuentas.</div>
+    <div id="signup-error" class="auth-error hidden"></div>
+    <div id="signup-success" class="auth-banner hidden"></div>
+    <form id="signup-form">
+      <div class="field">
+        <label for="signup-email">Correo</label>
+        <input type="email" id="signup-email" required autocomplete="username">
+      </div>
+      <div class="field">
+        <label for="signup-password">Contraseña</label>
+        <input type="password" id="signup-password" required minlength="6" autocomplete="new-password">
+      </div>
+      <div class="field">
+        <label for="signup-password-confirm">Confirmar contraseña</label>
+        <input type="password" id="signup-password-confirm" required minlength="6" autocomplete="new-password">
+      </div>
+      <button type="submit" id="signup-submit" class="btn btn-accent btn-block">Crear cuenta</button>
+    </form>
+    <p class="auth-switch">¿Ya tienes cuenta? <a id="go-to-login">Iniciar sesión</a></p>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="view-dashboard" class="hidden">
+  <div class="admin-topbar">
+    <div class="admin-logo">
+      <span class="admin-logo-main">MAAT</span>
+      <span class="admin-logo-sub">PANEL DE PROPIEDADES</span>
+    </div>
+    <div class="admin-topbar-right">
+      <a href="../index.html" target="_blank" class="btn btn-ghost btn-sm" style="color:#F5F1E8;border-color:rgba(245,241,232,0.35);">Ver landing</a>
+      <span class="admin-user-email" id="admin-user-email"></span>
+      <button id="logout-btn" class="btn btn-ghost btn-sm" style="color:#F5F1E8;border-color:rgba(245,241,232,0.35);">Cerrar sesión</button>
+    </div>
+  </div>
+
+  <div class="admin-main">
+    <div class="admin-toolbar">
+      <div>
+        <h1>Propiedades</h1>
+        <p class="admin-toolbar-hint">Arrastra las filas por el ícono ⠿ para reordenar cómo aparecen en el landing.</p>
+      </div>
+      <button id="new-property-btn" class="btn btn-accent">+ Nueva propiedad</button>
+    </div>
+
+    <div id="property-list" class="property-list"></div>
+  </div>
+</div>
+
+<!-- FORM MODAL -->
+<div id="property-form-modal" class="modal-overlay hidden">
+  <div class="modal-panel">
+    <h2 id="property-form-title-heading">Nueva propiedad</h2>
+    <div id="property-form-error" class="form-error hidden"></div>
+    <form id="property-form">
+      <div class="field">
+        <label for="field-title">Título</label>
+        <input type="text" id="field-title" required placeholder="Departamento en Zona Sur">
+      </div>
+      <div class="field">
+        <label for="field-location">Ubicación</label>
+        <input type="text" id="field-location" required placeholder="La Paz, Bolivia">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label for="field-price">Precio</label>
+          <input type="text" id="field-price" required placeholder="USD 185,000">
+        </div>
+        <div class="field">
+          <label for="field-status">Estado</label>
+          <select id="field-status">
+            <option value="available">Disponible</option>
+            <option value="sold">Vendida</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-row-3">
+        <div class="field">
+          <label for="field-area">Área</label>
+          <input type="text" id="field-area" required placeholder="120 m²">
+        </div>
+        <div class="field">
+          <label for="field-rooms">Ambientes</label>
+          <input type="text" id="field-rooms" required placeholder="3 habitaciones">
+        </div>
+        <div class="field">
+          <label for="field-baths">Baños</label>
+          <input type="text" id="field-baths" required placeholder="2 baños">
+        </div>
+      </div>
+      <div class="field">
+        <label for="field-description">Descripción</label>
+        <textarea id="field-description" rows="3" placeholder="Departamento moderno con vista a la ciudad…"></textarea>
+      </div>
+      <div class="field">
+        <label for="field-whatsapp">WhatsApp de contacto (opcional)</label>
+        <input type="text" id="field-whatsapp" placeholder="Ej: 59170613687 — si lo dejas vacío se usa el número general de la firma">
+      </div>
+
+      <div class="field">
+        <label>Fotos</label>
+        <div id="photo-dropzone" class="photo-dropzone">Haz clic o arrastra imágenes aquí</div>
+        <input type="file" id="photo-input" accept="image/*" multiple style="display:none;">
+        <div id="photo-grid" class="photo-grid"></div>
+      </div>
+
+      <div class="modal-form-actions">
+        <button type="button" id="property-form-cancel" class="btn btn-ghost">Cancelar</button>
+        <button type="submit" id="property-form-submit" class="btn btn-primary">Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="../assets/js/supabase-config.js"></script>
+<script src="../assets/js/admin.js"></script>
+</body>
+</html>
