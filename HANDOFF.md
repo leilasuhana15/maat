@@ -30,9 +30,21 @@ Sitio estático (HTML/CSS/JS puro, sin build) para **MAAT Firma Legal**, firma l
 - ✅ **Datos reales cargados**: la dueña ya agregó propiedades reales (confirmado vía API) y los 5 logos de marcas.
 - ✅ **Esquema re-ejecutado en producción**: tabla `partners` y bucket `partner-logos` confirmados por API (antes daban error "table not found").
 - ✅ **Bug crítico corregido — el clic en las tarjetas del carrusel no abría el modal**: el anillo gira continuamente (auto-rotate), así que para cuando el navegador procesaba el evento `click` nativo (después del `pointerup`), la tarjeta ya se había desplazado y el hit-test del click fallaba (el target resuelto era `.ring-stage`, no la tarjeta). Se reprodujo en producción con un clic real (no sintético) y se confirmó viendo `event.target` en la consola. Fix: la tarjeta se resuelve en el instante del `pointerdown` (guardada en `card.__property`, leída con `e.target.closest('.ring-card')`) y la apertura ocurre en `pointerup` usando esa referencia — ya no depende del evento `click` nativo ni de dónde quedó la tarjeta al soltar. Verificado con una prueba que fuerza 40° de rotación entre el down y el up: el modal se sigue abriendo correctamente; y que arrastrar (drag real) sigue sin abrir el modal.
-- ⚠️ **Pendiente:** eliminar la pantalla temporal de registro de `/admin` (instrucciones en [SETUP.md](SETUP.md) sección 3). Ahora que existe la pestaña "Administradores" para invitar formalmente, esta pantalla temporal es aún más prioritaria de quitar.
-- ⚠️ **Pendiente:** desplegar la Edge Function `invite-admin` — **confirmado que todavía NO está desplegada** (`POST /functions/v1/invite-admin` → 404 "Requested function was not found"). Instrucciones en [SETUP.md](SETUP.md) paso 4. Sin esto, la pestaña Administradores muestra error al invitar; el resto del panel funciona normal.
-- ⚠️ No probado end-to-end contra el proyecto real: invitar un admin (bloqueado por el punto anterior), y el flujo completo de editar/eliminar en Marcas (sí se probó agregar, vía la dueña).
+- ✅ **Edge Function `invite-admin` desplegada y funcionando** — confirmado: pasó de 404 a 401 ("Missing authorization header"), y la dueña ya invitó exitosamente a un agente nuevo por correo.
+- ✅ **Fix de invitación por correo**: el primer intento de invitar falló con `otp_expired` porque el **Site URL** de Supabase (Authentication → URL Configuration) seguía apuntando a `http://localhost:3000` (el default de ejemplo). Se corrigió a `https://leilasuhana15.github.io/maat/admin/` + Redirect URL `https://leilasuhana15.github.io/maat/**`; tras eso, una invitación reenviada funcionó.
+- ✅ **Sistema de roles admin/agente (cambio grande)**: hasta ahora cualquier usuario invitado tenía acceso total al panel — la dueña pidió que un agente invitado solo pueda gestionar sus propias propiedades y su cuenta, no la de otros ni las Marcas. Se implementó:
+  - Tabla `profiles` nueva (`role`: `admin`/`agent`, `is_active`): se crea automáticamente para cualquier usuario nuevo vía trigger `on_auth_user_created`. La lista de qué correos son `admin` se define en `supabase/schema.sql` (hay que editarla con los correos reales antes de correr — actualmente incluye `kunabox14@gmail.com` y `laboratoriovisnity@gmail.com` como placeholder, **verificar que sea correcto**).
+  - RLS de `properties` ahora exige `owner_id = auth.uid()` para insertar, y `owner_id = auth.uid() OR es_admin` para editar/borrar — un agente ya no puede tocar propiedades de otro, ni siquiera manipulando el cliente (queda forzado en la base de datos, no solo en la UI).
+  - Columna `properties.featured` (booleano): protegida por un trigger (`protect_featured_column`) que revierte el cambio si quien edita no es admin — un agente no puede autodestacarse aunque intente mandar el campo directo por API.
+  - El panel (`admin.js`) ahora, tras el login, lee el `profile` del usuario: si `is_active = false` lo desloguea con mensaje; según `role` muestra el dashboard completo (admin) o uno restringido (agente: sin pestañas Marcas/Administradores, sin checkbox "Destacada", sin drag-reorder, propiedades filtradas a `owner_id` propio, título "Mis propiedades").
+  - Nueva pestaña **"Mi cuenta"** (todos los roles): cambiar contraseña.
+  - Pestaña **Administradores** ampliada: además de invitar, lista todos los usuarios (`profiles`) con su rol y estado, y un botón para activar/desactivar acceso (actualiza `is_active`; no borra sus propiedades).
+  - `main.js`: el carrusel del landing arma un "pool" ponderado (`FEATURED_WEIGHT = 3`) y lo baraja en cada render, así una propiedad destacada aparece ~3x más seguido; se ve con una ⭐ junto al título tanto en el carrusel como en la lista del panel.
+  - **Limitación conocida**: el reordenar por drag&drop en Propiedades quedó deshabilitado para agentes (solo admin), porque reordenar un subconjunto filtrado por `owner_id` pisaría el `sort_order` global de propiedades de otros dueños.
+- ⚠️ **Pendiente — crítico:** correr de nuevo `supabase/schema.sql` en el proyecto real. Todavía no está confirmado que la tabla `profiles`, las nuevas columnas (`owner_id`, `featured`) y las políticas RLS actualizadas existan en producción — probado localmente que sin la tabla `profiles`, la pestaña Administradores muestra un error claro ("Could not find the table") en vez de romper el panel, pero el sistema de roles no funcionará hasta correr el script.
+- ⚠️ **Pendiente:** después de correr el script, confirmar que los correos correctos quedaron como `admin` (revisar la lista `where email in (...)` antes de correr, o correr un `update` aparte después).
+- ⚠️ **Pendiente:** eliminar la pantalla temporal de registro de `/admin` (instrucciones en [SETUP.md](SETUP.md) sección 3) — cualquiera que la use hoy se registra como `agent` (no como admin, gracias al nuevo sistema de roles, así que el riesgo bajó), pero sigue siendo mejor quitarla y usar solo el flujo de invitación.
+- ⚠️ No probado end-to-end contra el proyecto real: el flujo completo de un agente real (login, ver "Mis propiedades" vacío, crear una propiedad propia, confirmar que NO ve Marcas/Administradores), y que un admin pueda desactivar a ese agente y que pierda el acceso. Sí se probó toda la lógica de roles con sesiones simuladas en local (ver detalle en la conversación).
 - 🐛 **Nota de diseño (`.partners-strip`):** pasó por dos iteraciones. Primero fondo transparente puro — pero el `<body>` es crema y cada sección pinta su propio fondo (no hay fondo oscuro global), así que "transparente" mostraba una franja crema entre dos secciones verde oscuro. Luego se probó pintarla del mismo verde de sus vecinas. La versión final, pedida por la dueña tras ver los logos reales (varios con fondo blanco sólido, no transparente): franja blanca y delgada, para que combine con el fondo blanco que ya traen los logos en vez de pelear contra él.
 - 🐛 **Nota de entorno de pruebas:** el servidor local (`python -m http.server`, ver `.claude/launch.json`) a veces sirve JS desactualizado al navegador de pruebas por caché agresiva del propio navegador (no del servidor — confirmado con `curl` directo al puerto local, que siempre devolvió el archivo correcto). Si algo se ve "viejo" al probar localmente, verificar primero con `curl http://localhost:8080/...` antes de asumir que el código está mal.
 
@@ -46,8 +58,8 @@ assets/css/admin.css         → estilos del panel
 assets/js/supabase-config.js → credenciales de Supabase (URL + anon key, públicas por diseño)
 assets/js/bolivia-cities.js  → lista canónica de ciudades de Bolivia (compartida landing + admin)
 assets/js/main.js            → landing: fetch propiedades, carrusel 3D en anillo, modal con WhatsApp, franja de marcas
-assets/js/admin.js           → panel: auth, tabs, CRUD propiedades, marcas, invitar admins, mapa de ubicación
-supabase/schema.sql          → tablas properties + partners, políticas RLS, buckets property-photos + partner-logos
+assets/js/admin.js           → panel: auth+roles, tabs, CRUD propiedades (con owner_id/featured), marcas, invitar/gestionar usuarios, mi cuenta, mapa de ubicación
+supabase/schema.sql          → tablas properties + profiles (roles) + partners, funciones/triggers de permisos, políticas RLS, buckets property-photos + partner-logos
 supabase/functions/invite-admin/index.ts → Edge Function para invitar administradores (usa service_role, server-side)
 SETUP.md                     → guía de puesta en marcha (crear proyecto, correr SQL, crear admin, desplegar function)
 .claude/launch.json          → server estático local para preview (python -m http.server 8080)
@@ -79,7 +91,8 @@ Después de cada commit + push a `main`:
 
 ## Próximos pasos sugeridos
 
-1. Desplegar la Edge Function `invite-admin` (ver [SETUP.md](SETUP.md) paso 4) — es lo único de la lista original que sigue pendiente de la dueña.
-2. Quitar la pantalla de registro temporal de `/admin`.
-3. Probar el flujo de editar/eliminar en Marcas y Propiedades contra el proyecto real (agregar ya se probó).
-4. Confirmar con la firma si el video de fondo del hero se debe recuperar/reemplazar por uno propio.
+1. **Correr `supabase/schema.sql` de nuevo en producción** — trae la tabla `profiles` y el sistema de roles admin/agente; nada de eso funciona hasta hacerlo. Revisar/editar antes la lista de correos que deben quedar como `admin`.
+2. Verificar que el agente ya invitado (el que probó el flujo de invitación) haya quedado con rol `agent` y que su dashboard se vea restringido como corresponde.
+3. Quitar la pantalla de registro temporal de `/admin`.
+4. Probar el flujo de editar/eliminar en Marcas y Propiedades contra el proyecto real (agregar ya se probó).
+5. Confirmar con la firma si el video de fondo del hero se debe recuperar/reemplazar por uno propio.

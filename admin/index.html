@@ -76,6 +76,7 @@
     </div>
     <div class="admin-topbar-right">
       <a href="../index.html" target="_blank" class="btn btn-ghost btn-sm" style="color:#F5F1E8;border-color:rgba(245,241,232,0.35);">Ver landing</a>
+      <span class="role-badge" id="admin-role-badge"></span>
       <span class="admin-user-email" id="admin-user-email"></span>
       <button id="logout-btn" class="btn btn-ghost btn-sm" style="color:#F5F1E8;border-color:rgba(245,241,232,0.35);">Cerrar sesión</button>
     </div>
@@ -84,15 +85,16 @@
   <div class="admin-main">
     <div class="admin-tabs">
       <button type="button" class="admin-tab is-active" data-tab="properties">Propiedades</button>
-      <button type="button" class="admin-tab" data-tab="partners">Marcas</button>
-      <button type="button" class="admin-tab" data-tab="admins">Administradores</button>
+      <button type="button" class="admin-tab admin-only-tab hidden" data-tab="partners">Marcas</button>
+      <button type="button" class="admin-tab admin-only-tab hidden" data-tab="admins">Administradores</button>
+      <button type="button" class="admin-tab" data-tab="account">Mi cuenta</button>
     </div>
 
     <div id="tab-panel-properties" class="tab-panel">
       <div class="admin-toolbar">
         <div>
-          <h1>Propiedades</h1>
-          <p class="admin-toolbar-hint">Arrastra las filas por el ícono ⠿ para reordenar cómo aparecen en el landing.</p>
+          <h1 id="properties-panel-title">Propiedades</h1>
+          <p class="admin-toolbar-hint" id="properties-panel-hint">Arrastra las filas por el ícono ⠿ para reordenar cómo aparecen en el landing.</p>
         </div>
         <button id="new-property-btn" class="btn btn-accent">+ Nueva propiedad</button>
       </div>
@@ -128,20 +130,45 @@
       <div class="admin-toolbar">
         <div>
           <h1>Administradores</h1>
-          <p class="admin-toolbar-hint">Invita a una persona para que pueda entrar a este panel y gestionar propiedades. Recibirá un correo para crear su contraseña.</p>
+          <p class="admin-toolbar-hint">Invita a nuevos agentes o administradores. Un agente solo puede ver y editar sus propias propiedades; un administrador ve y gestiona todo.</p>
         </div>
       </div>
 
       <form id="invite-admin-form" class="invite-admin-card">
         <div class="field">
-          <label for="invite-email">Correo del nuevo administrador</label>
+          <label for="invite-email">Correo de la persona a invitar</label>
           <input type="email" id="invite-email" required placeholder="nombre@ejemplo.com">
         </div>
         <p id="invite-admin-error" class="form-error hidden"></p>
         <p id="invite-admin-success" class="auth-banner hidden"></p>
         <button type="submit" id="invite-admin-submit" class="btn btn-accent">Enviar invitación</button>
       </form>
-      <p class="admin-toolbar-hint">Para quitar acceso a un administrador existente, hazlo desde el dashboard de Supabase: Authentication → Users.</p>
+
+      <h2 class="admin-subheading">Usuarios con acceso</h2>
+      <p class="admin-toolbar-hint">Los agentes invitados aparecen aquí con rol "agent". Desactiva a alguien para quitarle acceso de inmediato (no borra sus propiedades).</p>
+      <div id="user-list" class="user-list"></div>
+    </div>
+
+    <div id="tab-panel-account" class="tab-panel hidden">
+      <div class="admin-toolbar">
+        <div>
+          <h1>Mi cuenta</h1>
+          <p class="admin-toolbar-hint">Cambia tu contraseña de acceso al panel.</p>
+        </div>
+      </div>
+      <form id="change-password-form" class="invite-admin-card">
+        <div class="field">
+          <label for="new-password">Nueva contraseña</label>
+          <input type="password" id="new-password" required minlength="6" autocomplete="new-password">
+        </div>
+        <div class="field">
+          <label for="new-password-confirm">Confirmar nueva contraseña</label>
+          <input type="password" id="new-password-confirm" required minlength="6" autocomplete="new-password">
+        </div>
+        <p id="change-password-error" class="form-error hidden"></p>
+        <p id="change-password-success" class="auth-banner hidden"></p>
+        <button type="submit" id="change-password-submit" class="btn btn-accent">Actualizar contraseña</button>
+      </form>
     </div>
   </div>
 </div>
@@ -183,6 +210,12 @@
             <option value="sold">Vendida</option>
           </select>
         </div>
+      </div>
+      <div class="field admin-only-field hidden" id="field-featured-wrap">
+        <label class="checkbox-label">
+          <input type="checkbox" id="field-featured">
+          Destacada (aparece con más frecuencia en el carrusel del landing)
+        </label>
       </div>
       <div class="field-row-3">
         <div class="field">

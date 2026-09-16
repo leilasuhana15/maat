@@ -107,6 +107,12 @@ input, textarea, select { font-family: inherit; }
 .admin-logo-sub { font-size: 8px; letter-spacing: 2px; color: var(--color-light); opacity: 0.7; margin-top: 2px; }
 .admin-topbar-right { display: flex; align-items: center; gap: 16px; }
 .admin-user-email { font-size: 13px; color: var(--color-light); opacity: 0.85; }
+.role-badge {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.3px; text-transform: uppercase;
+  padding: 3px 9px; border-radius: 100px; background: rgba(217,178,109,0.18); color: var(--color-accent);
+  border: 1px solid rgba(217,178,109,0.4);
+}
+.admin-subheading { font-family: var(--font-serif); font-size: 20px; font-weight: 600; color: var(--color-primary); margin: 32px 0 6px; }
 .admin-main { max-width: 1120px; margin: 0 auto; padding: 40px clamp(16px,4vw,40px) 80px; }
 .admin-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 28px; }
 .admin-toolbar h1 { font-family: var(--font-serif); font-size: 28px; font-weight: 600; margin: 0; color: var(--color-primary); }
@@ -234,3 +240,22 @@ input, textarea, select { font-family: inherit; }
   background: #fff; border-radius: 8px; padding: 24px; max-width: 420px;
   border: 1px solid rgba(18,63,57,0.08); box-shadow: 0 1px 3px rgba(0,0,0,0.06);
 }
+
+.user-list { display: flex; flex-direction: column; gap: 10px; }
+.user-row {
+  display: flex; align-items: center; gap: 16px;
+  background: #ffffff; border-radius: 8px; padding: 12px 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1px solid rgba(18,63,57,0.08);
+}
+.user-row-email { flex: 1; min-width: 0; font-size: 14px; font-weight: 600; color: var(--color-dark-text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.role-tag {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.3px; text-transform: uppercase;
+  padding: 3px 10px; border-radius: 100px; white-space: nowrap;
+}
+.role-tag.admin { background: rgba(217,178,109,0.18); color: #8a6a2c; }
+.role-tag.agent { background: rgba(18,63,57,0.1); color: var(--color-primary); }
+.user-row.is-inactive { opacity: 0.55; }
+
+/* ── Checkbox (Destacado) ── */
+.checkbox-label { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; color: var(--color-dark-text); cursor: pointer; }
+.checkbox-label input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--color-accent); cursor: pointer; }

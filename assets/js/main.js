@@ -127,6 +127,21 @@ function filteredProperties() {
   return filtered.length ? filtered : allProperties;
 }
 
+const FEATURED_WEIGHT = 3; // una propiedad destacada aparece ~3x más seguido en el carrusel
+
+function buildRingPool(list) {
+  const pool = [];
+  list.forEach((p) => {
+    const copies = p.featured ? FEATURED_WEIGHT : 1;
+    for (let i = 0; i < copies; i++) pool.push(p);
+  });
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  return pool;
+}
+
 function renderRing() {
   stopRingAnimation();
   ringStage.innerHTML = '';
@@ -141,8 +156,9 @@ function renderRing() {
     return;
   }
 
+  const pool = buildRingPool(list);
   for (let i = 0; i < RING_SIZE; i++) {
-    const property = list[i % list.length];
+    const property = pool[i % pool.length];
     const card = document.createElement('div');
     card.className = 'ring-card';
 
@@ -152,7 +168,7 @@ function renderRing() {
       : placeholderImgHtml(property.title);
     card.innerHTML +=
       '<div class="ring-card-overlay"></div>' +
-      '<div class="ring-card-label"><span>' + escapeHtml(property.title) + '</span></div>';
+      '<div class="ring-card-label"><span>' + (property.featured ? '★ ' : '') + escapeHtml(property.title) + '</span></div>';
 
     card.__property = property;
 

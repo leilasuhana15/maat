@@ -7,11 +7,13 @@ Sitio estático (HTML/CSS/JS puro, sin build) con Supabase como backend.
 1. Ve a [supabase.com](https://supabase.com) y crea una cuenta / un proyecto nuevo (plan gratuito).
 2. Espera a que termine de aprovisionarse (1-2 minutos).
 3. En el menú lateral ve a **SQL Editor** → **New query**, pega el contenido completo de [`supabase/schema.sql`](supabase/schema.sql) y ejecútalo (▶ Run). Esto crea:
-   - La tabla `properties` con sus políticas de seguridad (RLS).
-   - El bucket de Storage `property-photos` (público para lectura, solo administradores autenticados pueden subir/borrar).
-   - La tabla `partners` (logos de empresas aliadas) y el bucket `partner-logos`, con las mismas reglas.
-   - Es seguro volver a correr este script completo si ya lo habías ejecutado antes (usa `if not exists` / `drop policy if exists`) — así obtienes las tablas nuevas sin duplicar nada.
+   - La tabla `properties` con sus políticas de seguridad (RLS), incluyendo `owner_id` (quién puede editarla) y `featured` (destacada en el carrusel).
+   - La tabla `profiles` (rol `admin`/`agent` y estado activo/desactivado de cada usuario), con un trigger que crea automáticamente el perfil de cualquier usuario nuevo.
+   - El bucket de Storage `property-photos` (público para lectura, autenticados activos pueden subir/borrar).
+   - La tabla `partners` (logos de empresas aliadas, solo editable por administradores) y el bucket `partner-logos`.
+   - Es seguro volver a correr este script completo si ya lo habías ejecutado antes (usa `if not exists` / `drop policy if exists`) — así obtienes las tablas/columnas nuevas sin duplicar nada.
    - Si el bucket `property-photos` o `partner-logos` no aparece después de correr el script (puede pasar por permisos del SQL Editor), créalo manualmente en **Storage → New bucket** con ese nombre exacto y marca "Public bucket".
+   - **Importante:** cerca del final de la sección de `profiles`, el script tiene una línea `update public.profiles set role = 'admin' where email in (...)`. Edita esa lista con los correos que deben ser administradores (acceso total) antes de correrlo — cualquier otro usuario queda como `agent` (agente, solo ve/edita sus propias propiedades). Puedes volver a correr solo esa línea más adelante para promover a alguien más.
 4. Ve a **Project Settings → API** y copia:
    - **Project URL**
    - **anon public** key
@@ -79,6 +81,8 @@ supabase/functions/invite-admin/    → Edge Function para invitar administrador
 - El carrusel 3D en anillo reutiliza exactamente la física del diseño original (12 tarjetas, radio 520px, rotación automática + arrastre).
 - El modal de detalle arma el link de WhatsApp dinámicamente con el título y ubicación de la propiedad, e incluye navegación entre fotos cuando hay más de una.
 - La franja de logos ("empresas con las que trabajamos") debajo del hero se alimenta de la tabla `partners`; si está vacía, la franja simplemente no se muestra. Se administra desde la pestaña **Marcas** del panel.
-- En el panel, arrastra las filas por el ícono `⠿` para reordenar cómo aparecen en el landing (actualiza `sort_order`), tanto en Propiedades como en Marcas.
+- En el panel, un **administrador** arrastra las filas por el ícono `⠿` para reordenar cómo aparecen en el landing (actualiza `sort_order`), tanto en Propiedades como en Marcas. Un **agente** no puede reordenar (solo ve/edita sus propias propiedades, y reordenar un subconjunto filtrado pisaría el orden de las propiedades de otros).
 - Al eliminar una propiedad, un logo, o una foto individual, también se borra el archivo correspondiente del bucket de Storage.
-- La pestaña **Administradores** invita nuevos usuarios por correo (requiere desplegar la Edge Function del paso 4); cualquier administrador tiene los mismos permisos, no hay roles distintos.
+- **Roles:** un **administrador** ve y gestiona todas las propiedades, las Marcas de la firma, y la pestaña Administradores (invitar/desactivar usuarios). Un **agente** (invitado desde esa pestaña) tiene su propio panel restringido: solo ve/crea/edita sus propias propiedades y puede cambiar su contraseña en "Mi cuenta" — no ve Marcas ni Administradores, y no puede marcar una propiedad como "destacada" (eso solo lo hace un admin, protegido también a nivel de base de datos con un trigger). Las propiedades destacadas aparecen ~3 veces más seguido en el carrusel del landing (con una ⭐ junto al título en el panel).
+- Un administrador puede **desactivar** a cualquier usuario desde la pestaña Administradores; esa persona pierde acceso al panel de inmediato en su próximo intento de iniciar sesión, sin borrar las propiedades que ya había creado.
+- La pestaña **Administradores** invita nuevos usuarios por correo (requiere desplegar la Edge Function del paso 4); por defecto quedan como `agent` — para que alguien sea admin, agrega su correo a la lista de promoción en `supabase/schema.sql` y vuelve a correr esa línea.

@@ -106,15 +106,59 @@ async function init() {
 }
 
 let currentSession = null;
-function handleSession(session) {
+let currentProfile = null; // { role: 'admin'|'agent', is_active: boolean }
+
+async function handleSession(session) {
   const wasSignedIn = !!currentSession;
   currentSession = session;
-  if (session) {
-    document.getElementById('admin-user-email').textContent = session.user.email;
-    showView('dashboard');
-    if (!wasSignedIn) loadProperties();
-  } else {
+  if (!session) {
+    currentProfile = null;
     showView('login');
+    return;
+  }
+
+  const { data: profile, error } = await supabaseClient
+    .from('profiles')
+    .select('role, is_active')
+    .eq('id', session.user.id)
+    .maybeSingle();
+
+  if (error || !profile) {
+    await supabaseClient.auth.signOut();
+    loginError.textContent = 'No se pudo verificar tu cuenta. Contacta al administrador.';
+    loginError.classList.remove('hidden');
+    showView('login');
+    return;
+  }
+
+  if (!profile.is_active) {
+    await supabaseClient.auth.signOut();
+    loginError.textContent = 'Tu acceso fue desactivado por un administrador.';
+    loginError.classList.remove('hidden');
+    showView('login');
+    return;
+  }
+
+  currentProfile = profile;
+  document.getElementById('admin-user-email').textContent = session.user.email;
+  applyRoleUI();
+  showView('dashboard');
+  if (!wasSignedIn) loadProperties();
+}
+
+function applyRoleUI() {
+  const isAdmin = currentProfile && currentProfile.role === 'admin';
+  document.getElementById('admin-role-badge').textContent = isAdmin ? 'Administrador' : 'Agente';
+  document.querySelectorAll('.admin-only-tab').forEach((el) => el.classList.toggle('hidden', !isAdmin));
+  document.getElementById('field-featured-wrap').classList.toggle('hidden', !isAdmin);
+  document.getElementById('properties-panel-title').textContent = isAdmin ? 'Propiedades' : 'Mis propiedades';
+  document.getElementById('properties-panel-hint').textContent = isAdmin
+    ? 'Arrastra las filas por el ícono ⠿ para reordenar cómo aparecen en el landing.'
+    : 'Aquí solo ves y editas las propiedades que tú creaste.';
+  // Si el agente estaba parado en una pestaña que ya no le corresponde, vuelve a Propiedades.
+  const activeTab = document.querySelector('.admin-tab.is-active');
+  if (!isAdmin && activeTab && activeTab.classList.contains('admin-only-tab')) {
+    document.querySelector('.admin-tab[data-tab="properties"]').click();
   }
 }
 
@@ -124,10 +168,11 @@ const propertyListEl = document.getElementById('property-list');
 
 async function loadProperties() {
   propertyListEl.innerHTML = '<p class="property-empty">Cargando propiedades…</p>';
-  const { data, error } = await supabaseClient
-    .from('properties')
-    .select('*')
-    .order('sort_order', { ascending: true });
+  let query = supabaseClient.from('properties').select('*').order('sort_order', { ascending: true });
+  if (!currentProfile || currentProfile.role !== 'admin') {
+    query = query.eq('owner_id', currentSession.user.id);
+  }
+  const { data, error } = await query;
 
   if (error) {
     propertyListEl.innerHTML = '<p class="property-empty">Error al cargar propiedades: ' + escapeHtml(error.message) + '</p>';
@@ -143,22 +188,27 @@ function renderPropertyList() {
     return;
   }
 
+  const isAdmin = currentProfile && currentProfile.role === 'admin';
+
   propertyListEl.innerHTML = '';
   properties.forEach((property) => {
     const row = document.createElement('div');
     row.className = 'property-row';
-    row.draggable = true;
+    row.draggable = isAdmin;
     row.dataset.id = property.id;
 
+    // El reordenar por drag&drop reescribe sort_order del subconjunto visible;
+    // solo tiene sentido para el admin, que ve la lista completa. Si un agente
+    // reordenara su propio subconjunto filtrado, pisaría sort_order de otros.
     const thumb = (property.photos && property.photos[0])
       ? '<img class="property-thumb" src="' + escapeHtml(property.photos[0]) + '" alt="">'
       : '<div class="property-thumb-placeholder">MAAT</div>';
 
     row.innerHTML =
-      '<span class="property-drag-handle" title="Arrastra para reordenar">⠿</span>' +
+      (isAdmin ? '<span class="property-drag-handle" title="Arrastra para reordenar">⠿</span>' : '<span style="width:18px;flex-shrink:0;"></span>') +
       thumb +
       '<div class="property-info">' +
-        '<p class="property-info-title">' + escapeHtml(property.title) + '</p>' +
+        '<p class="property-info-title">' + (property.featured ? '★ ' : '') + escapeHtml(property.title) + '</p>' +
         '<p class="property-info-meta">' + escapeHtml(property.location) + ' · ' + escapeHtml(property.area) + ' · ' + escapeHtml(property.rooms) + '</p>' +
       '</div>' +
       '<span class="property-price">' + escapeHtml(property.price) + '</span>' +
@@ -249,7 +299,7 @@ function openPropertyForm(property) {
     formState = {
       id: crypto.randomUUID(),
       title: '', location: '', price: '', area: '', rooms: '', baths: '',
-      description: '', whatsapp: '', photos: [], status: 'available',
+      description: '', whatsapp: '', photos: [], status: 'available', featured: false,
     };
     document.getElementById('property-form-title-heading').textContent = 'Nueva propiedad';
   }
@@ -271,6 +321,7 @@ function openPropertyForm(property) {
   document.getElementById('field-description').value = formState.description || '';
   document.getElementById('field-whatsapp').value = formState.whatsapp || '';
   document.getElementById('field-status').value = formState.status;
+  document.getElementById('field-featured').checked = !!formState.featured;
 
   renderPhotoGrid();
   setUpLocationPicker(currentCity);
@@ -369,6 +420,7 @@ propertyForm.addEventListener('submit', async (e) => {
     description: document.getElementById('field-description').value.trim(),
     whatsapp: document.getElementById('field-whatsapp').value.trim() || null,
     status: document.getElementById('field-status').value,
+    featured: document.getElementById('field-featured').checked,
     photos: formState.photos,
   };
 
@@ -384,7 +436,7 @@ propertyForm.addEventListener('submit', async (e) => {
   let error;
   if (isNewProperty) {
     const sortOrder = properties.length ? Math.max(...properties.map((p) => p.sort_order)) + 1 : 0;
-    ({ error } = await supabaseClient.from('properties').insert({ id: formState.id, ...payload, sort_order: sortOrder }));
+    ({ error } = await supabaseClient.from('properties').insert({ id: formState.id, ...payload, owner_id: currentSession.user.id, sort_order: sortOrder }));
   } else {
     ({ error } = await supabaseClient.from('properties').update(payload).eq('id', formState.id));
   }
@@ -511,6 +563,7 @@ document.querySelectorAll('.admin-tab').forEach((btn) => {
       panel.classList.toggle('hidden', panel.id !== 'tab-panel-' + btn.dataset.tab);
     });
     if (btn.dataset.tab === 'partners') loadPartners();
+    if (btn.dataset.tab === 'admins') loadUsers();
   });
 });
 
@@ -666,6 +719,89 @@ document.getElementById('invite-admin-form').addEventListener('submit', async (e
   successEl.textContent = 'Invitación enviada a ' + email + '.';
   successEl.classList.remove('hidden');
   document.getElementById('invite-admin-form').reset();
+  loadUsers();
+});
+
+/* ── Administradores: lista de usuarios (activar/desactivar) ── */
+const userListEl = document.getElementById('user-list');
+
+async function loadUsers() {
+  userListEl.innerHTML = '<p class="property-empty">Cargando…</p>';
+  const { data, error } = await supabaseClient
+    .from('profiles')
+    .select('*')
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    userListEl.innerHTML = '<p class="property-empty">Error al cargar usuarios: ' + escapeHtml(error.message) + '</p>';
+    return;
+  }
+  renderUserList(data || []);
+}
+
+function renderUserList(users) {
+  if (!users.length) {
+    userListEl.innerHTML = '<p class="property-empty">No hay usuarios registrados todavía.</p>';
+    return;
+  }
+  userListEl.innerHTML = '';
+  users.forEach((user) => {
+    const row = document.createElement('div');
+    row.className = 'user-row' + (user.is_active ? '' : ' is-inactive');
+    const isSelf = currentSession && user.id === currentSession.user.id;
+
+    row.innerHTML =
+      '<span class="user-row-email">' + escapeHtml(user.email || user.id) + (isSelf ? ' (tú)' : '') + '</span>' +
+      '<span class="role-tag ' + (user.role === 'admin' ? 'admin' : 'agent') + '">' + (user.role === 'admin' ? 'Admin' : 'Agente') + '</span>' +
+      '<span class="status-badge ' + (user.is_active ? 'available' : 'sold') + '">' + (user.is_active ? 'Activo' : 'Desactivado') + '</span>' +
+      (isSelf ? '' : '<button type="button" class="btn btn-sm ' + (user.is_active ? 'btn-danger' : 'btn-ghost') + '" data-action="toggle">' + (user.is_active ? 'Desactivar' : 'Reactivar') + '</button>');
+
+    const toggleBtn = row.querySelector('[data-action="toggle"]');
+    if (toggleBtn) toggleBtn.addEventListener('click', () => toggleUserActive(user));
+
+    userListEl.appendChild(row);
+  });
+}
+
+async function toggleUserActive(user) {
+  const nextActive = !user.is_active;
+  const verb = nextActive ? 'reactivar' : 'desactivar';
+  if (!confirm('¿Seguro que quieres ' + verb + ' a ' + (user.email || user.id) + '?')) return;
+  const { error } = await supabaseClient.from('profiles').update({ is_active: nextActive }).eq('id', user.id);
+  if (error) { alert('Error: ' + error.message); return; }
+  loadUsers();
+}
+
+/* ── Mi cuenta: cambiar contraseña ── */
+document.getElementById('change-password-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const errorEl = document.getElementById('change-password-error');
+  const successEl = document.getElementById('change-password-success');
+  errorEl.classList.add('hidden');
+  successEl.classList.add('hidden');
+
+  const password = document.getElementById('new-password').value;
+  const confirmPassword = document.getElementById('new-password-confirm').value;
+  if (password !== confirmPassword) {
+    errorEl.textContent = 'Las contraseñas no coinciden.';
+    errorEl.classList.remove('hidden');
+    return;
+  }
+
+  const btn = document.getElementById('change-password-submit');
+  btn.disabled = true;
+  const { error } = await supabaseClient.auth.updateUser({ password });
+  btn.disabled = false;
+
+  if (error) {
+    errorEl.textContent = traduceAuthError(error.message);
+    errorEl.classList.remove('hidden');
+    return;
+  }
+
+  successEl.textContent = 'Contraseña actualizada.';
+  successEl.classList.remove('hidden');
+  document.getElementById('change-password-form').reset();
 });
 
 init();
