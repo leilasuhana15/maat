@@ -154,10 +154,7 @@ function renderRing() {
       '<div class="ring-card-overlay"></div>' +
       '<div class="ring-card-label"><span>' + escapeHtml(property.title) + '</span></div>';
 
-    card.addEventListener('click', () => {
-      if (ringMoved) { ringMoved = false; return; }
-      openProperty(property);
-    });
+    card.__property = property;
 
     ringStage.appendChild(card);
     ringCards.push(card);
@@ -203,11 +200,20 @@ function stopRingAnimation() {
   ringRafId = null;
 }
 
+let ringDownProperty = null;
+
 ringStage.addEventListener('pointerdown', (e) => {
   ringDragging = true;
   ringMoved = false;
   ringDragStartX = e.clientX;
   ringDragStartPhase = ringPhase;
+  // Se resuelve la tarjeta AHORA, en el instante más preciso posible: el anillo
+  // rota continuamente, así que para cuando el navegador procese el evento
+  // "click" nativo (tras el pointerup) la tarjeta ya pudo haberse movido y el
+  // hit-test del click puede fallar. Usamos esta referencia en vez del target
+  // del evento click.
+  const cardEl = e.target.closest ? e.target.closest('.ring-card') : null;
+  ringDownProperty = cardEl ? cardEl.__property : null;
   if (ringStage.setPointerCapture) { try { ringStage.setPointerCapture(e.pointerId); } catch (err) {} }
 });
 ringStage.addEventListener('pointermove', (e) => {
@@ -217,15 +223,17 @@ ringStage.addEventListener('pointermove', (e) => {
   ringPhase = ringDragStartPhase + dx * 0.18;
   updateRing();
 });
-function endRingDrag() {
+function endRingDrag(shouldSelect) {
   if (!ringDragging) return;
   ringDragging = false;
   ringLast = null;
   ringPauseUntil = performance.now() + 1600;
+  if (shouldSelect && !ringMoved && ringDownProperty) openProperty(ringDownProperty);
+  ringDownProperty = null;
 }
-ringStage.addEventListener('pointerup', endRingDrag);
-ringStage.addEventListener('pointercancel', endRingDrag);
-ringStage.addEventListener('pointerleave', endRingDrag);
+ringStage.addEventListener('pointerup', () => endRingDrag(true));
+ringStage.addEventListener('pointercancel', () => endRingDrag(false));
+ringStage.addEventListener('pointerleave', () => endRingDrag(false));
 
 /* ── Modal ── */
 function openProperty(property) {
