@@ -4,6 +4,27 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+const citySelectEl = document.getElementById('field-city');
+BOLIVIA_CITIES.forEach((city) => {
+  const opt = document.createElement('option');
+  opt.value = city;
+  opt.textContent = city;
+  citySelectEl.appendChild(opt);
+});
+
+function normalizeCityName(str) {
+  return (str || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+}
+
+function matchBoliviaCity(name) {
+  const target = normalizeCityName(name);
+  if (!target) return null;
+  return BOLIVIA_CITIES.find((c) => {
+    const nc = normalizeCityName(c);
+    return nc === target || target.includes(nc) || nc.includes(target);
+  }) || null;
+}
+
 function traduceAuthError(message) {
   if (/invalid login credentials/i.test(message)) return 'Correo o contraseña incorrectos.';
   if (/user already registered/i.test(message)) return 'Ya existe una cuenta con ese correo.';
@@ -238,8 +259,11 @@ function openPropertyForm(property) {
   ensureOptionExists(roomsSelect, formState.rooms);
   ensureOptionExists(bathsSelect, formState.baths);
 
+  const currentCity = (formState.location || '').split(',')[0].trim();
+  ensureOptionExists(citySelectEl, currentCity);
+
   document.getElementById('field-title').value = formState.title;
-  document.getElementById('field-location').value = formState.location;
+  citySelectEl.value = currentCity;
   document.getElementById('field-price').value = formState.price;
   document.getElementById('field-area').value = formState.area;
   roomsSelect.value = formState.rooms;
@@ -249,7 +273,7 @@ function openPropertyForm(property) {
   document.getElementById('field-status').value = formState.status;
 
   renderPhotoGrid();
-  setUpLocationPicker(formState.location);
+  setUpLocationPicker(currentCity);
   formModal.classList.remove('hidden');
   setTimeout(() => { if (locationMap) locationMap.invalidateSize(); }, 50);
 }
@@ -334,9 +358,10 @@ propertyForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   formError.classList.add('hidden');
 
+  const cityValue = citySelectEl.value.trim();
   const payload = {
     title: document.getElementById('field-title').value.trim(),
-    location: document.getElementById('field-location').value.trim(),
+    location: cityValue ? cityValue + ', Bolivia' : '',
     price: document.getElementById('field-price').value.trim(),
     area: document.getElementById('field-area').value.trim(),
     rooms: document.getElementById('field-rooms').value.trim(),
@@ -401,15 +426,26 @@ function placeMarker(lat, lng) {
   locationMap.setView([lat, lng], 14);
 }
 
-function cityCountryFromAddress(address) {
-  const city = address.city || address.town || address.village || address.municipality || address.county || address.state;
-  const country = address.country;
-  if (city && country) return city + ', ' + country;
-  return address.display_name || '';
+function guessCityFromAddress(address) {
+  return address.city || address.town || address.village || address.municipality || address.county || address.state || '';
+}
+
+function applyGeocodedCity(address) {
+  const hint = document.getElementById('location-map-hint');
+  const cityGuess = guessCityFromAddress(address);
+  const matched = matchBoliviaCity(cityGuess);
+  if (matched) {
+    citySelectEl.value = matched;
+    hint.textContent = 'Ciudad detectada: ' + matched + '.';
+  } else if (cityGuess) {
+    hint.textContent = 'No reconocemos "' + cityGuess + '" en la lista de ciudades; selecciónala manualmente arriba.';
+  } else {
+    hint.textContent = 'No se pudo determinar la ciudad; selecciónala manualmente arriba.';
+  }
 }
 
 async function searchLocation(query, opts) {
-  const fillLocationField = !opts || opts.fillLocationField !== false;
+  const updateCity = !opts || opts.updateCity !== false;
   if (!query || !query.trim()) return;
   ensureMapInit();
   try {
@@ -417,14 +453,14 @@ async function searchLocation(query, opts) {
     const res = await fetch(url, { headers: { 'Accept-Language': 'es' } });
     const results = await res.json();
     if (!results.length) {
-      if (fillLocationField) alert('No se encontró esa ubicación. Prueba con otro término de búsqueda, o edita el campo a mano.');
+      if (updateCity) alert('No se encontró esa ubicación. Prueba con otro término de búsqueda, o selecciona la ciudad manualmente.');
       return;
     }
     const r = results[0];
     placeMarker(parseFloat(r.lat), parseFloat(r.lon));
-    if (fillLocationField) document.getElementById('field-location').value = cityCountryFromAddress(r.address || {});
+    if (updateCity) applyGeocodedCity(r.address || {});
   } catch (err) {
-    if (fillLocationField) alert('No se pudo buscar la ubicación (revisa tu conexión).');
+    if (updateCity) alert('No se pudo buscar la ubicación (revisa tu conexión).');
   }
 }
 
@@ -433,18 +469,19 @@ async function reverseGeocode(lat, lng) {
     const url = 'https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&lat=' + lat + '&lon=' + lng;
     const res = await fetch(url, { headers: { 'Accept-Language': 'es' } });
     const r = await res.json();
-    document.getElementById('field-location').value = cityCountryFromAddress(r.address || {});
+    applyGeocodedCity(r.address || {});
   } catch (err) {
-    /* deja el campo como estaba; el admin puede editarlo a mano */
+    document.getElementById('location-map-hint').textContent = 'No se pudo determinar la ciudad; selecciónala manualmente arriba.';
   }
 }
 
-function setUpLocationPicker(existingLocation) {
+function setUpLocationPicker(existingCity) {
   ensureMapInit();
   document.getElementById('location-search').value = '';
+  document.getElementById('location-map-hint').textContent = 'Si reconocemos la ciudad en el mapa, la seleccionamos automáticamente arriba.';
   if (locationMarker) { locationMap.removeLayer(locationMarker); locationMarker = null; }
   locationMap.setView(DEFAULT_MAP_CENTER, 12);
-  if (existingLocation) searchLocation(existingLocation, { fillLocationField: false });
+  if (existingCity) searchLocation(existingCity + ', Bolivia', { updateCity: false });
 }
 
 document.getElementById('location-search-btn').addEventListener('click', () => {

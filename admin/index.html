@@ -105,14 +105,19 @@
         <input type="text" id="field-title" required placeholder="Departamento en Zona Sur">
       </div>
       <div class="field">
-        <label for="location-search">Ubicación</label>
+        <label for="field-city">Ciudad</label>
+        <select id="field-city" required>
+          <option value="">Selecciona una ciudad…</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="location-search">Ubicar en el mapa (opcional)</label>
         <div class="location-search-row">
-          <input type="text" id="location-search" placeholder="Busca una dirección, barrio o ciudad…">
+          <input type="text" id="location-search" placeholder="Busca una dirección o zona para confirmar la ciudad…">
           <button type="button" id="location-search-btn" class="btn btn-ghost btn-sm">Buscar</button>
         </div>
         <div id="location-map" class="location-map"></div>
-        <input type="text" id="field-location" required placeholder="La Paz, Bolivia">
-        <p class="field-hint">Se completa al buscar o hacer clic en el mapa; también puedes editarlo a mano.</p>
+        <p class="field-hint" id="location-map-hint">Si reconocemos la ciudad en el mapa, la seleccionamos automáticamente arriba.</p>
       </div>
       <div class="field-row">
         <div class="field">
@@ -196,6 +201,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="../assets/js/supabase-config.js"></script>
+<script src="../assets/js/bolivia-cities.js"></script>
 <script src="../assets/js/admin.js"></script>
 </body>
 </html>

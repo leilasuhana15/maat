@@ -101,9 +101,8 @@ async function loadProperties() {
 }
 
 function buildCityFilters() {
-  const cityOrder = ['La Paz', 'El Alto', 'Santa Cruz', 'Cochabamba', 'Tarija', 'Oruro', 'Potosí', 'Beni', 'Chuquisaca', 'Pando'];
   const presentCities = new Set(allProperties.map((p) => (p.location || '').split(',')[0].trim()));
-  const cities = ['Todas'].concat(cityOrder.filter((c) => presentCities.has(c)));
+  const cities = ['Todas'].concat(BOLIVIA_CITIES.filter((c) => presentCities.has(c)));
 
   cityFiltersEl.innerHTML = '';
   if (cities.length <= 1) return;

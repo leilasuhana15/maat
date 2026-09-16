@@ -22,11 +22,12 @@ Sitio estático (HTML/CSS/JS puro, sin build) para **MAAT Firma Legal**, firma l
 - ✅ Bucket de Storage `property-photos` creado y con política de lectura pública confirmada (`POST /storage/v1/object/list/property-photos` → 200).
 - ✅ Credenciales reales de Supabase conectadas en `assets/js/supabase-config.js` y desplegadas.
 - ✅ Primer usuario administrador creado por la dueña del proyecto; login en `/admin` confirmado funcionando.
-- ✅ Formulario de propiedad mejorado: "Ambientes" y "Baños" ahora son `<select>` con opciones predefinidas (con fallback automático si un valor antiguo no está en la lista), selector de ubicación con mapa (Leaflet + OpenStreetMap/Nominatim, sin API key ni costo — busca por texto o clic en el mapa y autocompleta "Ciudad, País"), y etiquetas rápidas para armar la descripción (Soleado, Amplio y espacioso, Cerca de parques, etc). También se corrigió un bug de overflow en la grilla Área/Ambientes/Baños (el `<select>`/`<input>` podía forzar la columna del grid más ancha que su contenedor; fix: `min-width:0` en `.field` y en los inputs).
+- ✅ Formulario de propiedad mejorado: "Ambientes" y "Baños" ahora son `<select>` con opciones predefinidas (con fallback automático si un valor antiguo no está en la lista), selector de ubicación con mapa (Leaflet + OpenStreetMap/Nominatim, sin API key ni costo — busca por texto o clic en el mapa), y etiquetas rápidas para armar la descripción (Soleado, Amplio y espacioso, Cerca de parques, etc). También se corrigió un bug de overflow en la grilla Área/Ambientes/Baños (el `<select>`/`<input>` podía forzar la columna del grid más ancha que su contenedor; fix: `min-width:0` en `.field` y en los inputs).
+- ✅ **Filtro de ciudad unificado a ciudad real** (ya no departamento): se creó `assets/js/bolivia-cities.js` con la lista canónica de las 10 ciudades principales de Bolivia (los 9 capitales de departamento + El Alto), compartida entre `main.js` (filtro del landing) y `admin.js` (nuevo campo obligatorio "Ciudad" — `<select>`, ya no texto libre). El mapa sigue disponible como ayuda: al buscar/hacer clic, intenta reconocer la ciudad geocodificada contra la lista y selecciona automáticamente la opción correcta; si no la reconoce, avisa y deja que se seleccione manualmente en vez de guardar un valor no filtrable. Esto garantiza que `location` siempre sea exactamente `"<Ciudad de la lista>, Bolivia"`, así el filtro del landing y los datos del admin nunca se desincronizan.
 - ⚠️ **Pendiente:** eliminar la pantalla temporal de registro de `/admin` (instrucciones en [SETUP.md](SETUP.md) sección 3) — mientras siga ahí, cualquiera que entre a `/admin` puede crearse una cuenta de administrador. Esperando confirmación de la dueña para quitarla.
 - ⚠️ **Pendiente:** cargar las primeras propiedades reales desde el panel (la tabla está vacía, por eso el landing muestra el estado "Pronto publicaremos nuevas propiedades disponibles").
-- ⚠️ No probado end-to-end todavía contra el proyecto Supabase real: crear/editar/eliminar una propiedad y subir fotos desde `/admin` (sí se probó toda la lógica, incluyendo el nuevo selector de mapa y los selects, con datos simulados en local — ver historial de la conversación).
-- ⚠️ **Limitación conocida:** los filtros de ciudad del landing (`cityOrder` en `main.js`) usan nombres de *departamento* boliviano ("La Paz", "Santa Cruz", "Beni"…), no el nombre de ciudad que devuelve la geolocalización real (p. ej. Nominatim devuelve "Santa Cruz de la Sierra", no "Santa Cruz"). Si el texto de "Ubicación" no coincide exactamente con la lista de `cityOrder`, esa propiedad simplemente no obtiene un pill de filtro propio (sigue apareciendo en "Todas"). No es un bug nuevo — ya existía con datos escritos a mano — pero el picker de mapa lo hace más evidente. No se ha tocado sin pedir confirmación porque cambiar esa lógica es una decisión de producto (¿filtrar por departamento o por ciudad real?).
+- ⚠️ No probado end-to-end todavía contra el proyecto Supabase real: crear/editar/eliminar una propiedad y subir fotos desde `/admin` (sí se probó toda la lógica — selects, mapa, matching de ciudad, filtro del landing — con datos simulados en local; ver historial de la conversación).
+- 🐛 **Nota de entorno de pruebas:** el servidor local (`python -m http.server`, ver `.claude/launch.json`) a veces sirve JS desactualizado al navegador de pruebas por caché agresiva del propio navegador (no del servidor — confirmado con `curl` directo al puerto local, que siempre devolvió el archivo correcto). Si algo se ve "viejo" al probar localmente, verificar primero con `curl http://localhost:8080/...` antes de asumir que el código está mal.
 
 ## Arquitectura / mapa de archivos
 
@@ -36,8 +37,9 @@ admin/index.html             → panel de administración
 assets/css/style.css         → estilos del landing
 assets/css/admin.css         → estilos del panel
 assets/js/supabase-config.js → credenciales de Supabase (URL + anon key, públicas por diseño)
+assets/js/bolivia-cities.js  → lista canónica de ciudades de Bolivia (compartida landing + admin)
 assets/js/main.js            → landing: fetch propiedades, carrusel 3D en anillo, modal con WhatsApp
-assets/js/admin.js           → panel: auth, CRUD propiedades, subida de fotos, reordenar drag&drop
+assets/js/admin.js           → panel: auth, CRUD propiedades, subida de fotos, reordenar drag&drop, mapa de ubicación
 supabase/schema.sql          → tabla properties + políticas RLS + bucket property-photos
 SETUP.md                     → guía de puesta en marcha (crear proyecto, correr SQL, crear admin)
 .claude/launch.json          → server estático local para preview (python -m http.server 8080)
@@ -70,7 +72,6 @@ Después de cada commit + push a `main`:
 ## Próximos pasos sugeridos
 
 1. Quitar la pantalla de registro temporal de `/admin`.
-2. Cargar las propiedades reales de la firma (con el nuevo selector de mapa/selects).
+2. Cargar las propiedades reales de la firma (con el nuevo selector de ciudad/mapa/selects).
 3. Probar el CRUD completo (crear/editar/subir fotos/reordenar/eliminar) contra el proyecto Supabase real.
-4. Decidir si los filtros de ciudad del landing deben pasar de "departamento" a "ciudad real" (ver limitación conocida arriba).
-5. Confirmar con la firma si el video de fondo del hero se debe recuperar/reemplazar por uno propio.
+4. Confirmar con la firma si el video de fondo del hero se debe recuperar/reemplazar por uno propio.
