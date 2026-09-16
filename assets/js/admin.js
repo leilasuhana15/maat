@@ -206,6 +206,17 @@ const photoDropzone = document.getElementById('photo-dropzone');
 let formState = null;
 let isNewProperty = true;
 
+function ensureOptionExists(selectEl, value) {
+  if (!value) return;
+  const exists = Array.from(selectEl.options).some((o) => o.value === value);
+  if (!exists) {
+    const opt = document.createElement('option');
+    opt.value = value;
+    opt.textContent = value + ' (personalizado)';
+    selectEl.appendChild(opt);
+  }
+}
+
 function openPropertyForm(property) {
   formError.classList.add('hidden');
   if (property) {
@@ -222,18 +233,25 @@ function openPropertyForm(property) {
     document.getElementById('property-form-title-heading').textContent = 'Nueva propiedad';
   }
 
+  const roomsSelect = document.getElementById('field-rooms');
+  const bathsSelect = document.getElementById('field-baths');
+  ensureOptionExists(roomsSelect, formState.rooms);
+  ensureOptionExists(bathsSelect, formState.baths);
+
   document.getElementById('field-title').value = formState.title;
   document.getElementById('field-location').value = formState.location;
   document.getElementById('field-price').value = formState.price;
   document.getElementById('field-area').value = formState.area;
-  document.getElementById('field-rooms').value = formState.rooms;
-  document.getElementById('field-baths').value = formState.baths;
+  roomsSelect.value = formState.rooms;
+  bathsSelect.value = formState.baths;
   document.getElementById('field-description').value = formState.description || '';
   document.getElementById('field-whatsapp').value = formState.whatsapp || '';
   document.getElementById('field-status').value = formState.status;
 
   renderPhotoGrid();
+  setUpLocationPicker(formState.location);
   formModal.classList.remove('hidden');
+  setTimeout(() => { if (locationMap) locationMap.invalidateSize(); }, 50);
 }
 
 function closePropertyForm() {
@@ -356,6 +374,96 @@ propertyForm.addEventListener('submit', async (e) => {
 
   closePropertyForm();
   loadProperties();
+});
+
+/* ── Ubicación: mapa OpenStreetMap + búsqueda Nominatim (gratis, sin API key) ── */
+let locationMap = null;
+let locationMarker = null;
+const DEFAULT_MAP_CENTER = [-16.5, -68.15]; // La Paz, Bolivia
+
+function ensureMapInit() {
+  if (locationMap || typeof L === 'undefined') return;
+  locationMap = L.map('location-map').setView(DEFAULT_MAP_CENTER, 12);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap',
+    maxZoom: 19,
+  }).addTo(locationMap);
+  locationMap.on('click', (e) => {
+    placeMarker(e.latlng.lat, e.latlng.lng);
+    reverseGeocode(e.latlng.lat, e.latlng.lng);
+  });
+}
+
+function placeMarker(lat, lng) {
+  if (!locationMap) return;
+  if (locationMarker) locationMarker.setLatLng([lat, lng]);
+  else locationMarker = L.marker([lat, lng]).addTo(locationMap);
+  locationMap.setView([lat, lng], 14);
+}
+
+function cityCountryFromAddress(address) {
+  const city = address.city || address.town || address.village || address.municipality || address.county || address.state;
+  const country = address.country;
+  if (city && country) return city + ', ' + country;
+  return address.display_name || '';
+}
+
+async function searchLocation(query, opts) {
+  const fillLocationField = !opts || opts.fillLocationField !== false;
+  if (!query || !query.trim()) return;
+  ensureMapInit();
+  try {
+    const url = 'https://nominatim.openstreetmap.org/search?format=jsonv2&addressdetails=1&limit=1&q=' + encodeURIComponent(query);
+    const res = await fetch(url, { headers: { 'Accept-Language': 'es' } });
+    const results = await res.json();
+    if (!results.length) {
+      if (fillLocationField) alert('No se encontró esa ubicación. Prueba con otro término de búsqueda, o edita el campo a mano.');
+      return;
+    }
+    const r = results[0];
+    placeMarker(parseFloat(r.lat), parseFloat(r.lon));
+    if (fillLocationField) document.getElementById('field-location').value = cityCountryFromAddress(r.address || {});
+  } catch (err) {
+    if (fillLocationField) alert('No se pudo buscar la ubicación (revisa tu conexión).');
+  }
+}
+
+async function reverseGeocode(lat, lng) {
+  try {
+    const url = 'https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&lat=' + lat + '&lon=' + lng;
+    const res = await fetch(url, { headers: { 'Accept-Language': 'es' } });
+    const r = await res.json();
+    document.getElementById('field-location').value = cityCountryFromAddress(r.address || {});
+  } catch (err) {
+    /* deja el campo como estaba; el admin puede editarlo a mano */
+  }
+}
+
+function setUpLocationPicker(existingLocation) {
+  ensureMapInit();
+  document.getElementById('location-search').value = '';
+  if (locationMarker) { locationMap.removeLayer(locationMarker); locationMarker = null; }
+  locationMap.setView(DEFAULT_MAP_CENTER, 12);
+  if (existingLocation) searchLocation(existingLocation, { fillLocationField: false });
+}
+
+document.getElementById('location-search-btn').addEventListener('click', () => {
+  searchLocation(document.getElementById('location-search').value);
+});
+document.getElementById('location-search').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.preventDefault(); searchLocation(document.getElementById('location-search').value); }
+});
+
+/* ── Descripción: etiquetas rápidas ── */
+document.querySelectorAll('.tag-chip').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const tag = btn.dataset.tag;
+    const textarea = document.getElementById('field-description');
+    if (textarea.value.includes(tag)) return;
+    const current = textarea.value.trim().replace(/\.+$/, '');
+    textarea.value = current ? current + '. ' + tag + '.' : tag + '.';
+    textarea.focus();
+  });
 });
 
 init();

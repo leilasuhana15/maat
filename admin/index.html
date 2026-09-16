@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
 <link rel="stylesheet" href="../assets/css/admin.css">
 </head>
 <body>
@@ -104,8 +105,14 @@
         <input type="text" id="field-title" required placeholder="Departamento en Zona Sur">
       </div>
       <div class="field">
-        <label for="field-location">Ubicación</label>
+        <label for="location-search">Ubicación</label>
+        <div class="location-search-row">
+          <input type="text" id="location-search" placeholder="Busca una dirección, barrio o ciudad…">
+          <button type="button" id="location-search-btn" class="btn btn-ghost btn-sm">Buscar</button>
+        </div>
+        <div id="location-map" class="location-map"></div>
         <input type="text" id="field-location" required placeholder="La Paz, Bolivia">
+        <p class="field-hint">Se completa al buscar o hacer clic en el mapa; también puedes editarlo a mano.</p>
       </div>
       <div class="field-row">
         <div class="field">
@@ -127,16 +134,44 @@
         </div>
         <div class="field">
           <label for="field-rooms">Ambientes</label>
-          <input type="text" id="field-rooms" required placeholder="3 habitaciones">
+          <select id="field-rooms" required>
+            <option value="">Selecciona…</option>
+            <option value="1 habitación">1 habitación</option>
+            <option value="2 habitaciones">2 habitaciones</option>
+            <option value="3 habitaciones">3 habitaciones</option>
+            <option value="4 habitaciones">4 habitaciones</option>
+            <option value="5 habitaciones">5 habitaciones</option>
+            <option value="6+ habitaciones">6+ habitaciones</option>
+            <option value="Espacio abierto">Espacio abierto</option>
+            <option value="A diseñar">A diseñar</option>
+          </select>
         </div>
         <div class="field">
           <label for="field-baths">Baños</label>
-          <input type="text" id="field-baths" required placeholder="2 baños">
+          <select id="field-baths" required>
+            <option value="">Selecciona…</option>
+            <option value="1 baño">1 baño</option>
+            <option value="2 baños">2 baños</option>
+            <option value="3 baños">3 baños</option>
+            <option value="4 baños">4 baños</option>
+            <option value="5+ baños">5+ baños</option>
+            <option value="—">— (no aplica)</option>
+          </select>
         </div>
       </div>
       <div class="field">
         <label for="field-description">Descripción</label>
         <textarea id="field-description" rows="3" placeholder="Departamento moderno con vista a la ciudad…"></textarea>
+        <div class="tag-suggestions">
+          <button type="button" class="tag-chip" data-tag="Soleado">Soleado</button>
+          <button type="button" class="tag-chip" data-tag="Amplio y espacioso">Amplio y espacioso</button>
+          <button type="button" class="tag-chip" data-tag="Cerca de zonas verdes">Cerca de zonas verdes</button>
+          <button type="button" class="tag-chip" data-tag="Cerca de parques">Cerca de parques</button>
+          <button type="button" class="tag-chip" data-tag="Zona céntrica">Zona céntrica</button>
+          <button type="button" class="tag-chip" data-tag="Ambiente tranquilo">Ambiente tranquilo</button>
+          <button type="button" class="tag-chip" data-tag="Excelente iluminación natural">Excelente iluminación natural</button>
+          <button type="button" class="tag-chip" data-tag="Vista panorámica">Vista panorámica</button>
+        </div>
       </div>
       <div class="field">
         <label for="field-whatsapp">WhatsApp de contacto (opcional)</label>
@@ -159,6 +194,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="../assets/js/supabase-config.js"></script>
 <script src="../assets/js/admin.js"></script>
 </body>
