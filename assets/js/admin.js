@@ -36,15 +36,11 @@ function traduceAuthError(message) {
 /* ── View switching ── */
 const views = {
   login: document.getElementById('view-login'),
-  signup: document.getElementById('view-signup'),
   dashboard: document.getElementById('view-dashboard'),
 };
 function showView(name) {
   Object.entries(views).forEach(([key, el]) => el.classList.toggle('hidden', key !== name));
 }
-
-document.getElementById('go-to-signup').addEventListener('click', (e) => { e.preventDefault(); showView('signup'); });
-document.getElementById('go-to-login').addEventListener('click', (e) => { e.preventDefault(); showView('login'); });
 
 /* ── Auth ── */
 const loginForm = document.getElementById('login-form');
@@ -62,39 +58,6 @@ loginForm.addEventListener('submit', async (e) => {
     loginError.textContent = traduceAuthError(error.message);
     loginError.classList.remove('hidden');
   }
-});
-
-const signupForm = document.getElementById('signup-form');
-const signupError = document.getElementById('signup-error');
-const signupSuccess = document.getElementById('signup-success');
-signupForm.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  signupError.classList.add('hidden');
-  signupSuccess.classList.add('hidden');
-  const email = document.getElementById('signup-email').value.trim();
-  const password = document.getElementById('signup-password').value;
-  const confirm = document.getElementById('signup-password-confirm').value;
-  if (password !== confirm) {
-    signupError.textContent = 'Las contraseñas no coinciden.';
-    signupError.classList.remove('hidden');
-    return;
-  }
-  const btn = document.getElementById('signup-submit');
-  btn.disabled = true;
-  const { data, error } = await supabaseClient.auth.signUp({ email, password });
-  btn.disabled = false;
-  if (error) {
-    signupError.textContent = traduceAuthError(error.message);
-    signupError.classList.remove('hidden');
-    return;
-  }
-  if (data.session) {
-    signupForm.reset();
-    return;
-  }
-  signupSuccess.textContent = 'Cuenta creada. Revisa tu correo para confirmar el acceso y luego inicia sesión.';
-  signupSuccess.classList.remove('hidden');
-  signupForm.reset();
 });
 
 document.getElementById('logout-btn').addEventListener('click', () => supabaseClient.auth.signOut());
