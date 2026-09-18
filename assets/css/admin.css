@@ -257,9 +257,10 @@ input, textarea, select { font-family: inherit; }
 
 /* ── Administradores ── */
 .invite-admin-card {
-  background: #fff; border-radius: 8px; padding: 24px; max-width: 420px;
+  background: #fff; border-radius: 8px; padding: 24px; max-width: 420px; margin-bottom: 24px;
   border: 1px solid rgba(44,64,45,0.08); box-shadow: 0 1px 3px rgba(0,0,0,0.06);
 }
+.profile-avatar-preview-thumb { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; margin-top: 10px; }
 
 .user-list { display: flex; flex-direction: column; gap: 10px; }
 .user-row {

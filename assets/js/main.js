@@ -196,8 +196,35 @@ function buildPropertyCard(property) {
     '<div class="ring-card-label">' +
       '<span class="ring-card-title-row">' + featuredIcon + '<span class="ring-card-title-text">' + escapeHtml(property.title) + '</span></span>' +
       priceLine +
-    '</div>';
+    '</div>' +
+    buildAgentBadgeHtml(property.agent);
+
+  const badgeEl = card.querySelector('.ring-card-agent');
+  if (badgeEl) {
+    badgeEl.querySelectorAll('a[data-social]').forEach((link) => {
+      link.addEventListener('pointerdown', (e) => e.stopPropagation());
+    });
+  }
   return card;
+}
+
+function buildAgentBadgeHtml(agent) {
+  if (!agent || (!agent.display_name && !agent.avatar_url)) return '';
+  const initial = (agent.display_name || '?').trim().charAt(0).toUpperCase();
+  const avatar = agent.avatar_url
+    ? '<img class="ring-card-agent-avatar" src="' + escapeHtml(agent.avatar_url) + '" alt="">'
+    : '<span class="ring-card-agent-avatar ring-card-agent-avatar-placeholder">' + escapeHtml(initial) + '</span>';
+  const socialLink = (url, label) => url
+    ? '<a class="ring-card-social-link" data-social href="' + escapeHtml(url) + '" target="_blank" rel="noopener" aria-label="' + label + '">' + label.charAt(0) + '</a>'
+    : '';
+  const socials = socialLink(agent.facebook_url, 'Facebook') + socialLink(agent.instagram_url, 'Instagram') + socialLink(agent.tiktok_url, 'TikTok');
+  return (
+    '<div class="ring-card-agent">' +
+      avatar +
+      '<span class="ring-card-agent-name">' + escapeHtml(agent.display_name || '') + '</span>' +
+      (socials ? '<span class="ring-card-agent-social">' + socials + '</span>' : '') +
+    '</div>'
+  );
 }
 
 const propertyRing = createRingCarousel({
@@ -211,7 +238,9 @@ const propertyRing = createRingCarousel({
 
 // Columnas públicas explícitas (sin owner_whatsapp: es el teléfono privado del
 // propietario del inmueble, nunca debe llegar al landing público).
-const PUBLIC_PROPERTY_COLUMNS = 'id,title,location,address,price,exchange_rate,area,rooms,baths,description,photos,whatsapp,featured,sort_order,status,created_at';
+const PUBLIC_PROPERTY_COLUMNS = 'id,title,location,address,price,exchange_rate,area,rooms,baths,description,photos,whatsapp,owner_id,featured,sort_order,status,created_at';
+// Columnas públicas del agente (nunca email/role/is_active: ver política RLS "public can read active agent public info").
+const PUBLIC_AGENT_COLUMNS = 'id,display_name,avatar_url,facebook_url,instagram_url,tiktok_url';
 
 async function loadProperties() {
   const { data, error } = await supabaseClient
@@ -225,10 +254,24 @@ async function loadProperties() {
     allProperties = [];
   } else {
     allProperties = data || [];
+    await attachAgentInfo(allProperties);
   }
 
   buildCityFilters();
   renderPropertyRing();
+}
+
+async function attachAgentInfo(properties) {
+  const ownerIds = [...new Set(properties.map((p) => p.owner_id).filter(Boolean))];
+  if (!ownerIds.length) return;
+  const { data, error } = await supabaseClient
+    .from('profiles')
+    .select(PUBLIC_AGENT_COLUMNS)
+    .in('id', ownerIds);
+  if (error || !data) return;
+  const agentById = {};
+  data.forEach((a) => { agentById[a.id] = a; });
+  properties.forEach((p) => { p.agent = p.owner_id ? agentById[p.owner_id] || null : null; });
 }
 
 function buildCityFilters() {
@@ -406,9 +449,12 @@ async function loadPartners() {
     return;
   }
 
-  const logosHtml = data.map((p) =>
-    '<img src="' + escapeHtml(p.logo_url) + '" alt="' + escapeHtml(p.name || 'Empresa aliada') + '" loading="lazy">'
-  ).join('');
+  const logosHtml = data.map((p) => {
+    const img = '<img src="' + escapeHtml(p.logo_url) + '" alt="' + escapeHtml(p.name || 'Empresa aliada') + '" loading="lazy">';
+    return p.url
+      ? '<a href="' + escapeHtml(p.url) + '" target="_blank" rel="noopener" aria-label="' + escapeHtml(p.name || 'Empresa aliada') + '">' + img + '</a>'
+      : img;
+  }).join('');
   // El track se duplica una vez para que la animación de scroll sea continua (sin salto visible).
   track.innerHTML = logosHtml + logosHtml;
 }

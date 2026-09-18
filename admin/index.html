@@ -147,6 +147,11 @@
           <input type="text" id="partner-name-input" placeholder="Ej: RE/MAX">
         </div>
         <div class="field">
+          <label for="partner-url-input">Sitio web (opcional)</label>
+          <input type="text" id="partner-url-input" placeholder="Ej: https://www.remax.com.bo">
+          <p class="field-hint">Si lo completas, el logo se puede clickear en el landing y abre este sitio.</p>
+        </div>
+        <div class="field">
           <label>Logo</label>
           <div id="partner-dropzone" class="photo-dropzone">Haz clic o arrastra una imagen aquí</div>
           <input type="file" id="partner-photo-input" accept="image/*" style="display:none;">
@@ -218,9 +223,38 @@
       <div class="admin-toolbar">
         <div>
           <h1>Mi cuenta</h1>
-          <p class="admin-toolbar-hint">Cambia tu contraseña de acceso al panel.</p>
+          <p class="admin-toolbar-hint">Tu perfil público (se muestra en tus tarjetas del carrusel de propiedades) y tu contraseña de acceso.</p>
         </div>
       </div>
+
+      <form id="profile-form" class="invite-admin-card">
+        <div class="field">
+          <label for="profile-name-input">Nombre del agente</label>
+          <input type="text" id="profile-name-input" placeholder="Ej: Ana Rodríguez">
+        </div>
+        <div class="field">
+          <label>Foto de perfil / logo</label>
+          <div id="profile-avatar-dropzone" class="photo-dropzone">Haz clic o arrastra una imagen aquí</div>
+          <input type="file" id="profile-avatar-input" accept="image/*" style="display:none;">
+          <div id="profile-avatar-preview"></div>
+        </div>
+        <div class="field">
+          <label for="profile-facebook-input">Facebook (opcional)</label>
+          <input type="text" id="profile-facebook-input" placeholder="Ej: https://facebook.com/tu.pagina">
+        </div>
+        <div class="field">
+          <label for="profile-instagram-input">Instagram (opcional)</label>
+          <input type="text" id="profile-instagram-input" placeholder="Ej: https://instagram.com/tu.usuario">
+        </div>
+        <div class="field">
+          <label for="profile-tiktok-input">TikTok (opcional)</label>
+          <input type="text" id="profile-tiktok-input" placeholder="Ej: https://tiktok.com/@tu.usuario">
+        </div>
+        <p id="profile-form-error" class="form-error hidden"></p>
+        <p id="profile-form-success" class="auth-banner hidden"></p>
+        <button type="submit" id="profile-form-submit" class="btn btn-accent">Guardar perfil</button>
+      </form>
+
       <form id="change-password-form" class="invite-admin-card">
         <div class="field">
           <label for="new-password">Nueva contraseña</label>

@@ -158,7 +158,7 @@ async function handleSession(session) {
 
   const { data: profile, error } = await supabaseClient
     .from('profiles')
-    .select('role, is_active')
+    .select('role, is_active, display_name, avatar_url, facebook_url, instagram_url, tiktok_url')
     .eq('id', session.user.id)
     .maybeSingle();
 
@@ -181,6 +181,7 @@ async function handleSession(session) {
   currentProfile = profile;
   document.getElementById('admin-user-email').textContent = session.user.email;
   applyRoleUI();
+  populateProfileForm();
   showView('dashboard');
   if (!wasSignedIn) loadProperties();
 }
@@ -732,7 +733,9 @@ function renderPartnerList() {
     row.innerHTML =
       '<span class="property-drag-handle" title="Arrastra para reordenar">⠿</span>' +
       '<img class="partner-logo-thumb" src="' + escapeHtml(partner.logo_url) + '" alt="">' +
-      '<span class="partner-info">' + escapeHtml(partner.name || '(sin nombre)') + '</span>' +
+      '<span class="partner-info">' + escapeHtml(partner.name || '(sin nombre)') +
+        (partner.url ? '<br><a href="' + escapeHtml(partner.url) + '" target="_blank" rel="noopener" style="font-size:12px;font-weight:400;">' + escapeHtml(partner.url) + '</a>' : '') +
+      '</span>' +
       '<button type="button" class="btn btn-danger btn-sm" data-action="delete">Eliminar</button>';
 
     row.querySelector('[data-action="delete"]').addEventListener('click', () => deletePartner(partner));
@@ -785,6 +788,7 @@ async function deletePartner(partner) {
 async function addPartner(file) {
   partnerAddError.classList.add('hidden');
   const name = partnerNameInput.value.trim();
+  const url = document.getElementById('partner-url-input').value.trim() || null;
   const id = crypto.randomUUID();
   const path = id + '/' + Date.now() + '-' + sanitizeFilename(file.name);
 
@@ -801,13 +805,14 @@ async function addPartner(file) {
   }
   const { data } = supabaseClient.storage.from(PARTNER_LOGOS_BUCKET).getPublicUrl(path);
   const sortOrder = partners.length ? Math.max(...partners.map((p) => p.sort_order)) + 1 : 0;
-  const { error } = await supabaseClient.from('partners').insert({ id, name, logo_url: data.publicUrl, sort_order: sortOrder });
+  const { error } = await supabaseClient.from('partners').insert({ id, name, logo_url: data.publicUrl, url, sort_order: sortOrder });
   if (error) {
     partnerAddError.textContent = 'Error al guardar: ' + error.message;
     partnerAddError.classList.remove('hidden');
     return;
   }
   partnerNameInput.value = '';
+  document.getElementById('partner-url-input').value = '';
   loadPartners();
 }
 
@@ -1155,6 +1160,97 @@ async function openUserProperties(user) {
   });
   userPropertiesBodyEl.appendChild(list);
 }
+
+/* ── Mi cuenta: perfil público (nombre, avatar, redes sociales) ── */
+const AGENT_AVATARS_BUCKET = 'agent-avatars';
+let profileAvatarUrl = null;
+const profileForm = document.getElementById('profile-form');
+const profileFormError = document.getElementById('profile-form-error');
+const profileFormSuccess = document.getElementById('profile-form-success');
+const profileAvatarDropzone = document.getElementById('profile-avatar-dropzone');
+const profileAvatarInput = document.getElementById('profile-avatar-input');
+const profileAvatarPreview = document.getElementById('profile-avatar-preview');
+
+function populateProfileForm() {
+  if (!currentProfile) return;
+  document.getElementById('profile-name-input').value = currentProfile.display_name || '';
+  document.getElementById('profile-facebook-input').value = currentProfile.facebook_url || '';
+  document.getElementById('profile-instagram-input').value = currentProfile.instagram_url || '';
+  document.getElementById('profile-tiktok-input').value = currentProfile.tiktok_url || '';
+  profileAvatarUrl = currentProfile.avatar_url || null;
+  renderProfileAvatarPreview();
+}
+
+function renderProfileAvatarPreview() {
+  profileAvatarPreview.innerHTML = '';
+  if (!profileAvatarUrl) return;
+  const img = document.createElement('img');
+  img.className = 'profile-avatar-preview-thumb';
+  img.src = profileAvatarUrl;
+  profileAvatarPreview.appendChild(img);
+}
+
+async function uploadProfileAvatar(file) {
+  profileFormError.classList.add('hidden');
+  const placeholder = document.createElement('div');
+  placeholder.className = 'photo-thumb is-uploading';
+  placeholder.style.marginTop = '10px';
+  profileAvatarPreview.appendChild(placeholder);
+
+  const path = currentSession.user.id + '/' + Date.now() + '-' + sanitizeFilename(file.name);
+  const { error: uploadError } = await supabaseClient.storage.from(AGENT_AVATARS_BUCKET).upload(path, file);
+  placeholder.remove();
+  if (uploadError) {
+    profileFormError.textContent = 'Error al subir la foto: ' + uploadError.message;
+    profileFormError.classList.remove('hidden');
+    return;
+  }
+  const { data } = supabaseClient.storage.from(AGENT_AVATARS_BUCKET).getPublicUrl(path);
+  profileAvatarUrl = data.publicUrl;
+  renderProfileAvatarPreview();
+}
+
+profileAvatarDropzone.addEventListener('click', () => profileAvatarInput.click());
+profileAvatarInput.addEventListener('change', () => {
+  if (profileAvatarInput.files[0]) uploadProfileAvatar(profileAvatarInput.files[0]);
+  profileAvatarInput.value = '';
+});
+profileAvatarDropzone.addEventListener('dragover', (e) => { e.preventDefault(); profileAvatarDropzone.classList.add('is-dragover'); });
+profileAvatarDropzone.addEventListener('dragleave', () => profileAvatarDropzone.classList.remove('is-dragover'));
+profileAvatarDropzone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  profileAvatarDropzone.classList.remove('is-dragover');
+  if (e.dataTransfer.files[0]) uploadProfileAvatar(e.dataTransfer.files[0]);
+});
+
+profileForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  profileFormError.classList.add('hidden');
+  profileFormSuccess.classList.add('hidden');
+
+  const payload = {
+    display_name: document.getElementById('profile-name-input').value.trim() || null,
+    avatar_url: profileAvatarUrl,
+    facebook_url: document.getElementById('profile-facebook-input').value.trim() || null,
+    instagram_url: document.getElementById('profile-instagram-input').value.trim() || null,
+    tiktok_url: document.getElementById('profile-tiktok-input').value.trim() || null,
+  };
+
+  const btn = document.getElementById('profile-form-submit');
+  btn.disabled = true;
+  const { error } = await supabaseClient.from('profiles').update(payload).eq('id', currentSession.user.id);
+  btn.disabled = false;
+
+  if (error) {
+    profileFormError.textContent = 'Error al guardar: ' + error.message;
+    profileFormError.classList.remove('hidden');
+    return;
+  }
+
+  currentProfile = { ...currentProfile, ...payload };
+  profileFormSuccess.textContent = 'Perfil actualizado.';
+  profileFormSuccess.classList.remove('hidden');
+});
 
 /* ── Mi cuenta: cambiar contraseña ── */
 document.getElementById('change-password-form').addEventListener('submit', async (e) => {

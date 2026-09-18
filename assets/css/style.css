@@ -205,6 +205,7 @@ button { font-family: inherit; }
   object-fit: contain;
   flex-shrink: 0;
 }
+.partners-track a { display: flex; align-items: center; flex-shrink: 0; }
 @keyframes partnersScroll {
   from { transform: translateX(0); }
   to { transform: translateX(-50%); }
@@ -265,6 +266,32 @@ button { font-family: inherit; }
 .ring-card-featured-icon {
   width: 14px; height: 14px; object-fit: contain; flex-shrink: 0;
 }
+.ring-card-agent {
+  position: absolute; left: 8px; bottom: 8px; right: 8px; padding: 6px 8px; border-radius: 4px;
+  background: rgba(10,30,27,0.78);
+  display: flex; align-items: center; gap: 6px;
+}
+.ring-card-agent-avatar {
+  width: 22px; height: 22px; border-radius: 50%; object-fit: cover; flex-shrink: 0;
+  border: 1px solid rgba(242,176,53,0.6);
+}
+.ring-card-agent-avatar-placeholder {
+  display: flex; align-items: center; justify-content: center;
+  background: var(--color-secondary); color: var(--color-light); font-size: 11px; font-weight: 600;
+}
+.ring-card-agent-name {
+  font-size: 11px; color: var(--color-light); letter-spacing: 0.2px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0;
+}
+.ring-card-agent-social { display: flex; gap: 4px; flex-shrink: 0; pointer-events: auto; }
+.ring-card-social-link {
+  width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(242,176,53,0.18); color: var(--color-accent);
+  font-size: 9px; font-weight: 700; text-decoration: none; text-transform: uppercase;
+  border: 1px solid rgba(242,176,53,0.4);
+}
+.ring-card-social-link:hover { background: var(--color-accent); color: var(--color-primary); }
 .ring-card--featured {
   border-color: rgba(242,176,53,0.9);
   box-shadow:

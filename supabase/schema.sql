@@ -44,8 +44,19 @@ create table if not exists public.profiles (
   email       text,
   role        text not null default 'agent' check (role in ('admin', 'agent')),
   is_active   boolean not null default true,
+  display_name   text, -- nombre público del agente, se muestra en las tarjetas del carrusel
+  avatar_url     text, -- foto de perfil / logo, público
+  facebook_url   text,
+  instagram_url  text,
+  tiktok_url     text,
   created_at  timestamptz not null default now()
 );
+
+alter table public.profiles add column if not exists display_name text;
+alter table public.profiles add column if not exists avatar_url text;
+alter table public.profiles add column if not exists facebook_url text;
+alter table public.profiles add column if not exists instagram_url text;
+alter table public.profiles add column if not exists tiktok_url text;
 
 -- Crea automáticamente el profile de cualquier usuario nuevo (admin o agente).
 create or replace function public.handle_new_user()
@@ -122,6 +133,29 @@ create trigger protect_featured
   before update on public.properties
   for each row execute function public.protect_featured_column();
 
+-- Evita que un agente se autopromueva a admin o se reactive editando su propio
+-- perfil (la pestaña "Mi cuenta" ahora permite auto-editar nombre/avatar/redes).
+create or replace function public.protect_profile_privileged_columns()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.is_admin() then
+    new.role := old.role;
+    new.is_active := old.is_active;
+    new.email := old.email;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists protect_profile_privileged on public.profiles;
+create trigger protect_profile_privileged
+  before update on public.profiles
+  for each row execute function public.protect_profile_privileged_columns();
+
 -- ── RLS: properties ───────────────────────────────────────────────
 alter table public.properties enable row level security;
 
@@ -192,6 +226,56 @@ create policy "admin can update profiles"
   using (public.is_admin())
   with check (public.is_admin());
 
+-- Cualquier usuario activo puede editar su propio perfil (nombre, avatar, redes);
+-- el trigger protect_profile_privileged de arriba bloquea que toque role/is_active/email.
+drop policy if exists "users can update own profile" on public.profiles;
+create policy "users can update own profile"
+  on public.profiles for update
+  to authenticated
+  using (id = auth.uid())
+  with check (id = auth.uid());
+
+-- El landing público necesita el nombre/avatar/redes del agente para mostrarlos
+-- en cada tarjeta del carrusel. Se restringe a esas columnas públicas nada más
+-- (nunca email) mediante grants de columna, ya que RLS solo filtra filas.
+drop policy if exists "public can read active agent public info" on public.profiles;
+create policy "public can read active agent public info"
+  on public.profiles for select
+  to anon
+  using (is_active = true);
+
+revoke select on public.profiles from anon;
+grant select (id, display_name, avatar_url, facebook_url, instagram_url, tiktok_url) on public.profiles to anon;
+
+-- ── Storage: bucket de fotos de perfil / logo de agentes ─────────
+insert into storage.buckets (id, name, public)
+values ('agent-avatars', 'agent-avatars', true)
+on conflict (id) do nothing;
+
+drop policy if exists "public can view agent avatars" on storage.objects;
+create policy "public can view agent avatars"
+  on storage.objects for select
+  to public
+  using (bucket_id = 'agent-avatars');
+
+drop policy if exists "users can upload own avatar" on storage.objects;
+create policy "users can upload own avatar"
+  on storage.objects for insert
+  to authenticated
+  with check (bucket_id = 'agent-avatars' and public.is_active_user());
+
+drop policy if exists "users can update own avatar" on storage.objects;
+create policy "users can update own avatar"
+  on storage.objects for update
+  to authenticated
+  using (bucket_id = 'agent-avatars' and public.is_active_user());
+
+drop policy if exists "users can delete own avatar" on storage.objects;
+create policy "users can delete own avatar"
+  on storage.objects for delete
+  to authenticated
+  using (bucket_id = 'agent-avatars' and public.is_active_user());
+
 -- ── Storage: bucket de fotos de propiedades ─────────────────────
 -- Cualquier autenticado activo puede subir/editar fotos (la propiedad a la que
 -- se asocian ya está protegida por su propia política de owner_id arriba).
@@ -229,9 +313,12 @@ create table if not exists public.partners (
   id           uuid primary key default gen_random_uuid(),
   name         text not null default '',
   logo_url     text not null,
+  url          text, -- sitio web de la marca; si está, el logo es clickeable en el landing
   sort_order   integer not null default 0,
   created_at   timestamptz not null default now()
 );
+
+alter table public.partners add column if not exists url text;
 
 create index if not exists partners_sort_order_idx on public.partners (sort_order);
 
