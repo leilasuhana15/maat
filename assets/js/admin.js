@@ -4,6 +4,12 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
+function formatPriceUSD(price) {
+  const digits = (price || '').toString().replace(/[^0-9]/g, '');
+  if (!digits) return escapeHtml(price || '');
+  return digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' USD';
+}
+
 const citySelectEl = document.getElementById('field-city');
 BOLIVIA_CITIES.forEach((city) => {
   const opt = document.createElement('option');
@@ -174,7 +180,7 @@ function renderPropertyList() {
         '<p class="property-info-title">' + (property.featured ? '★ ' : '') + escapeHtml(property.title) + '</p>' +
         '<p class="property-info-meta">' + escapeHtml(property.location) + ' · ' + escapeHtml(property.area) + ' · ' + escapeHtml(property.rooms) + '</p>' +
       '</div>' +
-      '<span class="property-price">USD ' + escapeHtml(property.price) + '</span>' +
+      '<span class="property-price">' + formatPriceUSD(property.price) + '</span>' +
       '<span class="status-badge ' + (property.status === 'sold' ? 'sold' : 'available') + '">' + (property.status === 'sold' ? 'Vendida' : 'Disponible') + '</span>' +
       '<div class="property-actions">' +
         '<button class="btn btn-ghost btn-sm" data-action="edit">Editar</button>' +
@@ -275,7 +281,7 @@ async function openPropertyDetail(property) {
     (photos ? '<div class="detail-photos">' + photos + '</div>' : '') +
     '<div class="detail-grid">' +
       '<div><p class="detail-label">Estado</p><p class="detail-value">' + (property.status === 'sold' ? 'Vendida' : 'Disponible') + '</p></div>' +
-      '<div><p class="detail-label">Precio</p><p class="detail-value">USD ' + escapeHtml(property.price) + '</p></div>' +
+      '<div><p class="detail-label">Precio</p><p class="detail-value">' + formatPriceUSD(property.price) + '</p></div>' +
       (property.exchange_rate ? '<div><p class="detail-label">Tipo de cambio aceptado</p><p class="detail-value">' + escapeHtml(property.exchange_rate) + '</p></div>' : '') +
       '<div><p class="detail-label">Ciudad</p><p class="detail-value">' + escapeHtml(property.location) + '</p></div>' +
       (property.address ? '<div><p class="detail-label">Dirección</p><p class="detail-value">' + escapeHtml(property.address) + '</p></div>' : '') +
