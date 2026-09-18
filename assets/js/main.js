@@ -179,7 +179,7 @@ function placeholderImgHtml(title) {
 
 function buildPropertyCard(property) {
   const card = document.createElement('div');
-  card.className = 'ring-card';
+  card.className = 'ring-card' + (property.featured ? ' ring-card--featured' : '');
   card.setAttribute('data-ring-card', '');
   const firstPhoto = (property.photos && property.photos[0]) || null;
   card.innerHTML = firstPhoto
@@ -188,9 +188,12 @@ function buildPropertyCard(property) {
   const priceLine = property.price
     ? '<span class="ring-card-price">' + formatPriceUSD(property.price) + (property.exchange_rate ? ' · ' + escapeHtml(property.exchange_rate) : '') + '</span>'
     : '';
+  const featuredIcon = property.featured
+    ? '<img class="ring-card-featured-icon" src="assets/img/bastet-icon-gold.png" alt="Destacada">'
+    : '';
   card.innerHTML +=
     '<div class="ring-card-overlay"></div>' +
-    '<div class="ring-card-label"><span>' + (property.featured ? '★ ' : '') + escapeHtml(property.title) + '</span>' + priceLine + '</div>';
+    '<div class="ring-card-label"><span>' + featuredIcon + escapeHtml(property.title) + '</span>' + priceLine + '</div>';
   return card;
 }
 

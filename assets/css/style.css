@@ -269,6 +269,13 @@ button { font-family: inherit; }
 }
 .ring-card-label span { font-size: 11px; color: var(--color-light); letter-spacing: 0.3px; }
 .ring-card-price { color: var(--color-accent) !important; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ring-card-featured-icon {
+  width: 14px; height: 14px; object-fit: contain; vertical-align: -2px; margin-right: 4px;
+}
+.ring-card--featured {
+  border-color: rgba(242,176,53,0.6);
+  box-shadow: 0 0 46px 10px rgba(242,176,53,0.45), 0 22px 44px rgba(0,0,0,0.55);
+}
 
 /* ── Property modal ── */
 .property-modal-backdrop {
