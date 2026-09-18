@@ -261,6 +261,7 @@ async function getProfilesEmailMap() {
 
 async function openPropertyDetail(property) {
   const isAdmin = currentProfile && currentProfile.role === 'admin';
+  const isOwnProperty = currentSession && property.owner_id === currentSession.user.id;
   detailTitleEl.textContent = (property.featured ? '★ ' : '') + property.title;
 
   const photos = (property.photos || []).map((url) =>
@@ -291,11 +292,13 @@ async function openPropertyDetail(property) {
       ownerRow +
     '</div>' +
     (property.description ? '<p class="detail-label">Descripción</p><p class="detail-desc">' + escapeHtml(property.description) + '</p>' : '') +
-    '<div class="detail-contact">' +
-      '<p class="detail-label" style="margin:0;">WhatsApp del agente</p>' +
-      '<span class="detail-value">' + escapeHtml(whatsappLabel) + '</span>' +
-      '<a href="https://wa.me/' + whatsappDigits + '" target="_blank" rel="noopener" class="btn btn-accent btn-sm">Abrir WhatsApp</a>' +
-    '</div>' +
+    (isOwnProperty
+      ? ''
+      : '<div class="detail-contact">' +
+          '<p class="detail-label" style="margin:0;">WhatsApp del agente</p>' +
+          '<span class="detail-value">' + escapeHtml(whatsappLabel) + '</span>' +
+          '<a href="https://wa.me/' + whatsappDigits + '" target="_blank" rel="noopener" class="btn btn-accent btn-sm">Abrir WhatsApp</a>' +
+        '</div>') +
     (property.owner_whatsapp
       ? '<div class="detail-contact" style="margin-top:10px;">' +
           '<p class="detail-label" style="margin:0;">WhatsApp del propietario <span style="text-transform:none;font-weight:400;">(privado)</span></p>' +
