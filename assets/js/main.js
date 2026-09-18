@@ -1,5 +1,5 @@
-const WHATSAPP_PHONE = '59170613687';
-const WHATSAPP_GENERIC_MESSAGE = 'Hola MAAT Firma Legal, quiero solicitar una evaluación gratuita para vender mi inmueble, esta es la ubicación del mismo ⬇️';
+const WHATSAPP_PHONE = '59177666205';
+const WHATSAPP_GENERIC_MESSAGE = 'Hola Bastet, quiero solicitar una evaluación gratuita para vender mi inmueble, esta es la ubicación del mismo ⬇️';
 
 function normalizePhone(phone) {
   return (phone || '').replace(/[^0-9]/g, '');
@@ -73,7 +73,7 @@ let selectedProperty = null;
 let selectedPhotoIndex = 0;
 
 function placeholderImgHtml(title) {
-  return '<div class="ring-card-img-placeholder">' + escapeHtml(title || 'MAAT') + '</div>';
+  return '<div class="ring-card-img-placeholder">' + escapeHtml(title || 'BASTET') + '</div>';
 }
 
 function escapeHtml(str) {
@@ -271,7 +271,7 @@ function renderModal() {
   const hasPhotos = photos.length > 0;
   const currentPhoto = hasPhotos ? photos[selectedPhotoIndex] : null;
 
-  const message = 'Hola MAAT Firma Legal, me interesa la propiedad: ' + p.title + ' (' + p.location + '). ¿Podrían brindarme más información?';
+  const message = 'Hola Bastet, me interesa la propiedad: ' + p.title + ' (' + p.location + '). ¿Podrían brindarme más información?';
 
   modal.innerHTML =
     '<button class="property-modal-close" aria-label="Cerrar" id="property-modal-close">×</button>' +
@@ -339,3 +339,35 @@ async function loadPartners() {
 }
 
 loadPartners();
+
+/* ── Video del hero: reproduce y luego retrocede en cámara lenta (ping-pong), en vez de cortar y reiniciar ── */
+(function setupHeroVideo() {
+  const video = document.getElementById('hero-video');
+  if (!video) return;
+  if (reducedMotion) { video.pause(); return; }
+
+  let reversing = false;
+  let rafId = null;
+
+  function stepReverse() {
+    if (!reversing) return;
+    video.currentTime = Math.max(0, video.currentTime - 0.033);
+    if (video.currentTime <= 0.03) {
+      reversing = false;
+      video.currentTime = 0;
+      video.play().catch(() => {});
+      return;
+    }
+    rafId = requestAnimationFrame(stepReverse);
+  }
+
+  video.addEventListener('timeupdate', () => {
+    if (!reversing && video.duration && video.currentTime >= video.duration - 0.08) {
+      reversing = true;
+      video.pause();
+      rafId = requestAnimationFrame(stepReverse);
+    }
+  });
+
+  video.play().catch(() => {});
+})();

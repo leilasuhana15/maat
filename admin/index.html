@@ -3,11 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Panel de administración — MAAT Firma Legal</title>
+<title>Panel de administración — Bastet</title>
 <meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/svg+xml" href="../assets/img/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
 <link rel="stylesheet" href="../assets/css/admin.css">
 </head>
@@ -17,8 +18,11 @@
 <div id="view-login" class="auth-screen hidden">
   <div class="auth-card">
     <div class="auth-logo">
-      <span class="auth-logo-main">MAAT</span>
-      <span class="auth-logo-sub">FIRMA LEGAL — ADMIN</span>
+      <span class="auth-logo-icon">
+        <svg viewBox="0 0 140 170" xmlns="http://www.w3.org/2000/svg"><path d="M100,150 Q118,148 120,130 Q122,112 108,100 Q104,97 101,100 Q112,110 110,126 Q108,140 94,145 Q90,150 100,150 Z" fill="currentColor"/><path d="M35,20 Q46,22 50,36 Q54,28 58,36 Q62,22 74,20 L66,37 Q74,48 68,60 Q82,66 86,90 C88,112 86,138 76,155 C70,163 60,166 52,164 C44,166 34,163 28,155 C18,138 16,112 18,90 Q22,66 36,60 Q30,48 38,37 Z" fill="currentColor"/></svg>
+      </span>
+      <span class="auth-logo-main">BASTET</span>
+      <span class="auth-logo-sub">PROPIEDADES · INMOBILIARIAS — ADMIN</span>
     </div>
     <h1 class="auth-title">Iniciar sesión</h1>
     <div id="login-error" class="auth-error hidden"></div>
@@ -41,8 +45,11 @@
 <div id="view-signup" class="auth-screen hidden">
   <div class="auth-card">
     <div class="auth-logo">
-      <span class="auth-logo-main">MAAT</span>
-      <span class="auth-logo-sub">FIRMA LEGAL — ADMIN</span>
+      <span class="auth-logo-icon">
+        <svg viewBox="0 0 140 170" xmlns="http://www.w3.org/2000/svg"><path d="M100,150 Q118,148 120,130 Q122,112 108,100 Q104,97 101,100 Q112,110 110,126 Q108,140 94,145 Q90,150 100,150 Z" fill="currentColor"/><path d="M35,20 Q46,22 50,36 Q54,28 58,36 Q62,22 74,20 L66,37 Q74,48 68,60 Q82,66 86,90 C88,112 86,138 76,155 C70,163 60,166 52,164 C44,166 34,163 28,155 C18,138 16,112 18,90 Q22,66 36,60 Q30,48 38,37 Z" fill="currentColor"/></svg>
+      </span>
+      <span class="auth-logo-main">BASTET</span>
+      <span class="auth-logo-sub">PROPIEDADES · INMOBILIARIAS — ADMIN</span>
     </div>
     <h1 class="auth-title">Crear cuenta de administrador</h1>
     <div class="auth-banner">⚠️ Pantalla temporal. Úsala solo para crear tu primer usuario y luego elimina la carpeta <code>admin</code> de este flujo de registro (o pide que se quite del código) para que nadie más pueda crear cuentas.</div>
@@ -71,14 +78,19 @@
 <div id="view-dashboard" class="hidden">
   <div class="admin-topbar">
     <div class="admin-logo">
-      <span class="admin-logo-main">MAAT</span>
-      <span class="admin-logo-sub">PANEL DE PROPIEDADES</span>
+      <span class="admin-logo-icon">
+        <svg viewBox="0 0 140 170" xmlns="http://www.w3.org/2000/svg"><path d="M100,150 Q118,148 120,130 Q122,112 108,100 Q104,97 101,100 Q112,110 110,126 Q108,140 94,145 Q90,150 100,150 Z" fill="currentColor"/><path d="M35,20 Q46,22 50,36 Q54,28 58,36 Q62,22 74,20 L66,37 Q74,48 68,60 Q82,66 86,90 C88,112 86,138 76,155 C70,163 60,166 52,164 C44,166 34,163 28,155 C18,138 16,112 18,90 Q22,66 36,60 Q30,48 38,37 Z" fill="currentColor"/></svg>
+      </span>
+      <span class="admin-logo-text">
+        <span class="admin-logo-main">BASTET</span>
+        <span class="admin-logo-sub">PANEL DE PROPIEDADES</span>
+      </span>
     </div>
     <div class="admin-topbar-right">
-      <a href="../index.html" target="_blank" class="btn btn-ghost btn-sm" style="color:#F5F1E8;border-color:rgba(245,241,232,0.35);">Ver landing</a>
+      <a href="../index.html" target="_blank" class="btn btn-ghost btn-sm" style="color:#F2E4DF;border-color:rgba(242,228,223,0.35);">Ver landing</a>
       <span class="role-badge" id="admin-role-badge"></span>
       <span class="admin-user-email" id="admin-user-email"></span>
-      <button id="logout-btn" class="btn btn-ghost btn-sm" style="color:#F5F1E8;border-color:rgba(245,241,232,0.35);">Cerrar sesión</button>
+      <button id="logout-btn" class="btn btn-ghost btn-sm" style="color:#F2E4DF;border-color:rgba(242,228,223,0.35);">Cerrar sesión</button>
     </div>
   </div>
 

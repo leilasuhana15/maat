@@ -1,4 +1,4 @@
-// Configuración de Supabase para MAAT Firma Legal.
+// Configuración de Supabase para Bastet.
 // 1. Crea un proyecto en https://supabase.com (o usa uno existente).
 // 2. Ve a Project Settings > API y copia "Project URL" y "anon public" key.
 // 3. Reemplaza los dos valores de abajo.

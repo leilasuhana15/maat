@@ -1,5 +1,5 @@
 // Edge Function: invite-admin
-// Invita por correo a un nuevo usuario administrador del panel MAAT.
+// Invita por correo a un nuevo usuario administrador del panel Bastet.
 //
 // Por qué existe: crear usuarios de Supabase Auth requiere la service_role key,
 // que NUNCA debe estar en código que corre en el navegador (le da acceso total

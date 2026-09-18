@@ -1,4 +1,4 @@
--- MAAT Firma Legal — esquema de base de datos
+-- Bastet Propiedades — esquema de base de datos
 -- Ejecutar completo en Supabase: Dashboard > SQL Editor > New query > Run
 -- Es seguro volver a ejecutar este archivo completo las veces que haga falta.
 

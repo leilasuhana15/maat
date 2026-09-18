@@ -1,4 +1,4 @@
-# MAAT Firma Legal — Guía de puesta en marcha
+# Bastet Propiedades · Inmobiliarias — Guía de puesta en marcha
 
 Sitio estático (HTML/CSS/JS puro, sin build) con Supabase como backend.
 

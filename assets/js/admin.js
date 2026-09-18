@@ -202,7 +202,7 @@ function renderPropertyList() {
     // reordenara su propio subconjunto filtrado, pisaría sort_order de otros.
     const thumb = (property.photos && property.photos[0])
       ? '<img class="property-thumb" src="' + escapeHtml(property.photos[0]) + '" alt="">'
-      : '<div class="property-thumb-placeholder">MAAT</div>';
+      : '<div class="property-thumb-placeholder">BASTET</div>';
 
     row.innerHTML =
       (isAdmin ? '<span class="property-drag-handle" title="Arrastra para reordenar">⠿</span>' : '<span style="width:18px;flex-shrink:0;"></span>') +
