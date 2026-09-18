@@ -115,6 +115,7 @@
   <div class="admin-main">
     <div class="admin-tabs">
       <button type="button" class="admin-tab is-active" data-tab="properties">Propiedades</button>
+      <button type="button" class="admin-tab" data-tab="analytics">Analítica</button>
       <button type="button" class="admin-tab admin-only-tab hidden" data-tab="partners">Marcas</button>
       <button type="button" class="admin-tab admin-only-tab hidden" data-tab="testimonials">Testimonios</button>
       <button type="button" class="admin-tab admin-only-tab hidden" data-tab="admins">Usuarios</button>
@@ -131,6 +132,17 @@
       </div>
 
       <div id="property-list" class="property-list"></div>
+    </div>
+
+    <div id="tab-panel-analytics" class="tab-panel hidden">
+      <div class="admin-toolbar">
+        <div>
+          <h1 id="analytics-panel-title">Analítica</h1>
+          <p class="admin-toolbar-hint" id="analytics-panel-hint">Vistas y contactos por WhatsApp de tus propiedades.</p>
+        </div>
+      </div>
+      <div id="analytics-stats" class="analytics-stats"></div>
+      <div id="analytics-table" class="property-list"></div>
     </div>
 
     <div id="tab-panel-partners" class="tab-panel hidden">

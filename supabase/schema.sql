@@ -204,6 +204,39 @@ create policy "owner or admin can delete properties"
   to authenticated
   using ((owner_id = auth.uid() and public.is_active_user()) or public.is_admin());
 
+-- ── Tabla property_events (analítica: vistas y clics a WhatsApp) ──
+-- Sin datos personales ni de sesión: solo cuenta eventos anónimos por propiedad.
+create table if not exists public.property_events (
+  id           uuid primary key default gen_random_uuid(),
+  property_id  uuid not null references public.properties(id) on delete cascade,
+  event_type   text not null check (event_type in ('view', 'whatsapp_click')),
+  created_at   timestamptz not null default now()
+);
+
+create index if not exists property_events_property_id_idx on public.property_events (property_id);
+create index if not exists property_events_created_at_idx on public.property_events (created_at);
+
+alter table public.property_events enable row level security;
+
+-- Cualquier visitante (incluso anónimo) puede registrar un evento; no puede leer ni modificar ninguno.
+drop policy if exists "anyone can insert property events" on public.property_events;
+create policy "anyone can insert property events"
+  on public.property_events for insert
+  to anon, authenticated
+  with check (true);
+
+-- Solo el dueño de la propiedad (o un admin) puede leer sus propias estadísticas.
+drop policy if exists "owner or admin can read property events" on public.property_events;
+create policy "owner or admin can read property events"
+  on public.property_events for select
+  to authenticated
+  using (
+    public.is_admin() or exists (
+      select 1 from public.properties p
+      where p.id = property_id and p.owner_id = auth.uid()
+    )
+  );
+
 -- ── RLS: profiles ─────────────────────────────────────────────────
 alter table public.profiles enable row level security;
 

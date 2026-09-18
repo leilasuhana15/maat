@@ -695,8 +695,94 @@ document.querySelectorAll('.admin-tab').forEach((btn) => {
     if (btn.dataset.tab === 'partners') loadPartners();
     if (btn.dataset.tab === 'testimonials') loadTestimonials();
     if (btn.dataset.tab === 'admins') loadUsers();
+    if (btn.dataset.tab === 'analytics') loadAnalytics();
   });
 });
+
+/* ── Analítica: vistas y contactos por WhatsApp por propiedad ── */
+async function loadAnalytics() {
+  const isAdmin = currentProfile && currentProfile.role === 'admin';
+  document.getElementById('analytics-panel-hint').textContent = isAdmin
+    ? 'Vistas y contactos por WhatsApp de todas las propiedades.'
+    : 'Vistas y contactos por WhatsApp de tus propiedades.';
+
+  const statsEl = document.getElementById('analytics-stats');
+  const tableEl = document.getElementById('analytics-table');
+  statsEl.innerHTML = '';
+  tableEl.innerHTML = '<p class="property-empty">Cargando…</p>';
+
+  if (!properties.length) {
+    tableEl.innerHTML = '<p class="property-empty">Todavía no hay propiedades para mostrar estadísticas.</p>';
+    return;
+  }
+
+  const propertyIds = properties.map((p) => p.id);
+  const { data, error } = await supabaseClient
+    .from('property_events')
+    .select('property_id, event_type, created_at')
+    .in('property_id', propertyIds);
+
+  if (error) {
+    tableEl.innerHTML = '<p class="property-empty">Error al cargar analítica: ' + escapeHtml(error.message) + '</p>';
+    return;
+  }
+
+  const events = data || [];
+  const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const statsByProperty = {};
+  properties.forEach((p) => { statsByProperty[p.id] = { views: 0, contacts: 0 }; });
+
+  let totalViews = 0, totalContacts = 0, views7d = 0, contacts7d = 0;
+  events.forEach((e) => {
+    const stat = statsByProperty[e.property_id];
+    if (!stat) return;
+    const isRecent = new Date(e.created_at).getTime() >= sevenDaysAgo;
+    if (e.event_type === 'view') {
+      stat.views++; totalViews++;
+      if (isRecent) views7d++;
+    } else if (e.event_type === 'whatsapp_click') {
+      stat.contacts++; totalContacts++;
+      if (isRecent) contacts7d++;
+    }
+  });
+
+  const contactRate = totalViews ? Math.round((totalContacts / totalViews) * 100) : 0;
+
+  statsEl.innerHTML = [
+    ['Propiedades', properties.length],
+    ['Vistas totales', totalViews],
+    ['Contactos por WhatsApp', totalContacts],
+    ['Tasa de contacto', contactRate + '%'],
+    ['Vistas (7 días)', views7d],
+    ['Contactos (7 días)', contacts7d],
+  ].map(([label, value]) =>
+    '<div class="analytics-stat-card"><p class="analytics-stat-value">' + value + '</p><p class="analytics-stat-label">' + label + '</p></div>'
+  ).join('');
+
+  const sorted = [...properties].sort((a, b) => statsByProperty[b.id].views - statsByProperty[a.id].views);
+
+  tableEl.innerHTML = '';
+  sorted.forEach((property) => {
+    const stat = statsByProperty[property.id];
+    const rate = stat.views ? Math.round((stat.contacts / stat.views) * 100) : 0;
+    const thumb = (property.photos && property.photos[0])
+      ? '<img class="property-thumb" src="' + escapeHtml(property.photos[0]) + '" alt="">'
+      : '<div class="property-thumb-placeholder">BASTET</div>';
+    const row = document.createElement('div');
+    row.className = 'property-row property-row-clickable';
+    row.innerHTML =
+      thumb +
+      '<div class="property-info">' +
+        '<p class="property-info-title">' + (property.featured ? '<img class="property-featured-icon" src="../assets/img/bastet-icon-gold.png" alt="Destacada">' : '') + escapeHtml(property.title) + '</p>' +
+        '<p class="property-info-meta">' + escapeHtml(property.location) + '</p>' +
+      '</div>' +
+      '<div class="analytics-metric"><p class="analytics-metric-value">' + stat.views + '</p><p class="analytics-metric-label">Vistas</p></div>' +
+      '<div class="analytics-metric"><p class="analytics-metric-value">' + stat.contacts + '</p><p class="analytics-metric-label">Contactos</p></div>' +
+      '<div class="analytics-metric"><p class="analytics-metric-value">' + rate + '%</p><p class="analytics-metric-label">Tasa</p></div>';
+    row.addEventListener('click', () => openPropertyDetail(property));
+    tableEl.appendChild(row);
+  });
+}
 
 /* ── Marcas (logos de empresas aliadas) ── */
 let partners = [];

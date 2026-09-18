@@ -318,12 +318,20 @@ function renderPropertyRing() {
   propertyRing.render(buildRingPool(filteredProperties()));
 }
 
+/* ── Analítica: vistas y clics a WhatsApp por propiedad (sin datos personales) ── */
+function trackEvent(propertyId, eventType) {
+  if (!propertyId) return;
+  supabaseClient.from('property_events').insert({ property_id: propertyId, event_type: eventType })
+    .then(() => {}, () => {});
+}
+
 /* ── Modal ── */
 function openProperty(property) {
   selectedProperty = property;
   selectedPhotoIndex = 0;
   renderModal();
   modalBackdrop.classList.remove('hidden');
+  trackEvent(property.id, 'view');
 }
 
 function closeProperty() {
@@ -390,10 +398,11 @@ function renderModal() {
       '</div>' +
       '<p class="property-modal-desc">' + escapeHtml(p.description) + '</p>' +
       buildAgentSectionHtml(p.agent) +
-      '<a class="cta-button cta-button--block" style="margin-top:8px;" href="' + whatsappUrl(message, p.whatsapp) + '" target="_blank" rel="noopener"><span>Consultar por WhatsApp</span></a>' +
+      '<a class="cta-button cta-button--block" id="modal-whatsapp-cta" style="margin-top:8px;" href="' + whatsappUrl(message, p.whatsapp) + '" target="_blank" rel="noopener"><span>Consultar por WhatsApp</span></a>' +
     '</div>';
 
   document.getElementById('property-modal-close').addEventListener('click', closeProperty);
+  document.getElementById('modal-whatsapp-cta').addEventListener('click', () => trackEvent(p.id, 'whatsapp_click'));
   const prevBtn = document.getElementById('modal-prev');
   const nextBtn = document.getElementById('modal-next');
   if (prevBtn) prevBtn.addEventListener('click', () => { selectedPhotoIndex = (selectedPhotoIndex - 1 + photos.length) % photos.length; renderModal(); });
