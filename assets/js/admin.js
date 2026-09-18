@@ -177,7 +177,7 @@ function renderPropertyList() {
       (isAdmin ? '<span class="property-drag-handle" title="Arrastra para reordenar">⠿</span>' : '<span style="width:18px;flex-shrink:0;"></span>') +
       thumb +
       '<div class="property-info">' +
-        '<p class="property-info-title">' + (property.featured ? '★ ' : '') + escapeHtml(property.title) + '</p>' +
+        '<p class="property-info-title">' + (property.featured ? '<img class="property-featured-icon" src="../assets/img/bastet-icon-gold.png" alt="Destacada">' : '') + escapeHtml(property.title) + '</p>' +
         '<p class="property-info-meta">' + escapeHtml(property.location) + ' · ' + escapeHtml(property.area) + ' · ' + escapeHtml(property.rooms) + '</p>' +
       '</div>' +
       '<span class="property-price">' + formatPriceUSD(property.price) + '</span>' +
@@ -262,7 +262,7 @@ async function getProfilesEmailMap() {
 async function openPropertyDetail(property) {
   const isAdmin = currentProfile && currentProfile.role === 'admin';
   const isOwnProperty = currentSession && property.owner_id === currentSession.user.id;
-  detailTitleEl.textContent = (property.featured ? '★ ' : '') + property.title;
+  detailTitleEl.innerHTML = (property.featured ? '<img class="property-featured-icon" src="../assets/img/bastet-icon-gold.png" alt="Destacada">' : '') + escapeHtml(property.title);
 
   const photos = (property.photos || []).map((url) =>
     '<img src="' + escapeHtml(url) + '" alt="">'
