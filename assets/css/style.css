@@ -347,8 +347,10 @@ button { font-family: inherit; }
 .footer { background: #1c2a1d; padding: 64px clamp(20px,6vw,48px) 40px; border-top: 1px solid rgba(242,176,53,0.2); }
 .footer-inner { max-width: 1120px; margin: 0 auto; display: flex; flex-direction: column; gap: 40px; }
 .footer-top { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 40px; }
-.footer-logo-icon { display: block; width: 30px; height: 30px; margin-bottom: 8px; }
+.footer-logo-row { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.footer-logo-icon { display: block; width: 34px; height: 34px; flex-shrink: 0; }
 .footer-logo-icon img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.footer-logo-text { display: flex; flex-direction: column; line-height: 1; }
 .footer-logo { font-family: var(--font-serif); font-size: 28px; font-weight: 600; color: var(--color-accent); }
 .footer-logo-sub { font-size: 11px; color: var(--color-light); opacity: 0.6; letter-spacing: 2px; margin-top: 4px; }
 .footer-name { font-size: 14px; color: var(--color-light); opacity: 0.85; margin-top: 16px; }
