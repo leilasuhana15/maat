@@ -193,7 +193,10 @@ function buildPropertyCard(property) {
     : '';
   card.innerHTML +=
     '<div class="ring-card-overlay"></div>' +
-    '<div class="ring-card-label"><span>' + featuredIcon + escapeHtml(property.title) + '</span>' + priceLine + '</div>';
+    '<div class="ring-card-label">' +
+      '<span class="ring-card-title-row">' + featuredIcon + '<span class="ring-card-title-text">' + escapeHtml(property.title) + '</span></span>' +
+      priceLine +
+    '</div>';
   return card;
 }
 

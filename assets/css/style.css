@@ -269,8 +269,10 @@ button { font-family: inherit; }
 }
 .ring-card-label span { font-size: 11px; color: var(--color-light); letter-spacing: 0.3px; }
 .ring-card-price { color: var(--color-accent) !important; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ring-card-title-row { display: flex; align-items: center; gap: 5px; min-width: 0; }
+.ring-card-title-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .ring-card-featured-icon {
-  width: 14px; height: 14px; object-fit: contain; vertical-align: -2px; margin-right: 4px;
+  width: 14px; height: 14px; object-fit: contain; flex-shrink: 0;
 }
 .ring-card--featured {
   border-color: rgba(242,176,53,0.6);
