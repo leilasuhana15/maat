@@ -292,10 +292,17 @@ async function openPropertyDetail(property) {
     '</div>' +
     (property.description ? '<p class="detail-label">Descripción</p><p class="detail-desc">' + escapeHtml(property.description) + '</p>' : '') +
     '<div class="detail-contact">' +
-      '<p class="detail-label" style="margin:0;">Contacto</p>' +
+      '<p class="detail-label" style="margin:0;">WhatsApp del agente</p>' +
       '<span class="detail-value">' + escapeHtml(whatsappLabel) + '</span>' +
       '<a href="https://wa.me/' + whatsappDigits + '" target="_blank" rel="noopener" class="btn btn-accent btn-sm">Abrir WhatsApp</a>' +
-    '</div>';
+    '</div>' +
+    (property.owner_whatsapp
+      ? '<div class="detail-contact" style="margin-top:10px;">' +
+          '<p class="detail-label" style="margin:0;">WhatsApp del propietario <span style="text-transform:none;font-weight:400;">(privado)</span></p>' +
+          '<span class="detail-value">' + escapeHtml(property.owner_whatsapp) + '</span>' +
+          '<a href="https://wa.me/' + normalizePhoneDigits(property.owner_whatsapp) + '" target="_blank" rel="noopener" class="btn btn-ghost btn-sm">Abrir WhatsApp</a>' +
+        '</div>'
+      : '');
 
   detailModal.classList.remove('hidden');
 }
@@ -338,7 +345,7 @@ function openPropertyForm(property) {
     formState = {
       id: crypto.randomUUID(),
       title: '', location: '', address: '', price: '', exchange_rate: '', area: '', rooms: '', baths: '',
-      description: '', whatsapp: '', photos: [], status: 'available', featured: false,
+      description: '', whatsapp: '', owner_whatsapp: '', photos: [], status: 'available', featured: false,
     };
     document.getElementById('property-form-title-heading').textContent = 'Nueva propiedad';
   }
@@ -360,6 +367,7 @@ function openPropertyForm(property) {
   bathsSelect.value = formState.baths;
   document.getElementById('field-description').value = formState.description || '';
   document.getElementById('field-whatsapp').value = formState.whatsapp || '';
+  document.getElementById('field-owner-whatsapp').value = formState.owner_whatsapp || '';
   document.getElementById('field-status').value = formState.status;
   document.getElementById('field-featured').checked = !!formState.featured;
 
@@ -461,6 +469,7 @@ propertyForm.addEventListener('submit', async (e) => {
     baths: document.getElementById('field-baths').value.trim(),
     description: document.getElementById('field-description').value.trim(),
     whatsapp: document.getElementById('field-whatsapp').value.trim() || null,
+    owner_whatsapp: document.getElementById('field-owner-whatsapp').value.trim() || null,
     status: document.getElementById('field-status').value,
     featured: document.getElementById('field-featured').checked,
     photos: formState.photos,

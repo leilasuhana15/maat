@@ -15,7 +15,8 @@ create table if not exists public.properties (
   description  text not null default '',
   photos       text[] not null default '{}',
   address      text, -- dirección exacta (calle/zona), sincronizada con el mapa del panel; location sigue siendo solo la ciudad
-  whatsapp     text, -- número de contacto específico de la propiedad; si es NULL, el landing usa el número general de la firma
+  whatsapp     text, -- WhatsApp del agente, público: si es NULL, el landing usa el número general de la firma
+  owner_whatsapp text, -- WhatsApp del propietario del inmueble; privado, solo visible en el panel admin (nunca en el landing)
   owner_id     uuid references auth.users(id) on delete set null, -- quién creó/es dueño de la propiedad
   featured     boolean not null default false, -- solo un administrador puede marcarla (ver trigger más abajo); aparece más veces en el carrusel
   sort_order   integer not null default 0,
@@ -29,6 +30,7 @@ alter table public.properties add column if not exists owner_id uuid references 
 alter table public.properties add column if not exists featured boolean not null default false;
 alter table public.properties add column if not exists address text;
 alter table public.properties add column if not exists exchange_rate text;
+alter table public.properties add column if not exists owner_whatsapp text;
 
 create index if not exists properties_sort_order_idx on public.properties (sort_order);
 create index if not exists properties_status_idx on public.properties (status);
@@ -129,6 +131,12 @@ create policy "public can read available properties"
   on public.properties for select
   to anon
   using (status = 'available');
+
+-- Nota: owner_whatsapp (teléfono privado del propietario del inmueble, no del agente)
+-- no se restringe a nivel de columna aquí a propósito: "select *" bajo RLS de fila
+-- requiere permiso sobre todas las columnas, así que revocarlo rompería el landing
+-- público entero. En su lugar, main.js pide explícitamente solo las columnas públicas
+-- (sin owner_whatsapp) al consultar propiedades como "anon" — ver loadProperties().
 
 -- Cualquier usuario autenticado (admin o agente) puede leer todo
 drop policy if exists "authenticated can read all properties" on public.properties;

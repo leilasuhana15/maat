@@ -203,10 +203,14 @@ const propertyRing = createRingCarousel({
   emptyText: 'Pronto publicaremos nuevas propiedades disponibles.',
 });
 
+// Columnas públicas explícitas (sin owner_whatsapp: es el teléfono privado del
+// propietario del inmueble, nunca debe llegar al landing público).
+const PUBLIC_PROPERTY_COLUMNS = 'id,title,location,address,price,exchange_rate,area,rooms,baths,description,photos,whatsapp,featured,sort_order,status,created_at';
+
 async function loadProperties() {
   const { data, error } = await supabaseClient
     .from('properties')
-    .select('*')
+    .select(PUBLIC_PROPERTY_COLUMNS)
     .eq('status', 'available')
     .order('sort_order', { ascending: true });
 
