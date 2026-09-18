@@ -45,12 +45,117 @@ document.querySelectorAll('.reveal').forEach((el) => {
   else el.classList.add('is-visible');
 });
 
-/* ── Propiedades: fetch + city filter + ring carousel + modal ── */
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str ?? '';
+  return div.innerHTML;
+}
+
+const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ── Carrusel 3D en anillo, genérico (lo usan Propiedades y Testimonios) ──
+   Reproduce la misma física: rotación automática + arrastre, con la tarjeta
+   resuelta en pointerdown (no en el evento "click") para que no falle si el
+   anillo se movió entre el down y el up. */
+function createRingCarousel({ stage, radius, size = 12, cull = 50, speed = 5, buildCard, onSelect, emptyText = 'Próximamente.' }) {
+  const step = 360 / size;
+  let cards = [];
+  let phase = -2;
+  let last = null;
+  let rafId = null;
+  let dragging = false;
+  let moved = false;
+  let dragStartX = 0;
+  let dragStartPhase = 0;
+  let pauseUntil = 0;
+  let downItem = null;
+
+  function update() {
+    for (let i = 0; i < cards.length; i++) {
+      const el = cards[i];
+      if (!el) continue;
+      let a = ((i * step + phase) % 360 + 540) % 360 - 180;
+      if (Math.abs(a) > cull) { el.style.visibility = 'hidden'; continue; }
+      el.style.visibility = 'visible';
+      const r = (a * Math.PI) / 180, c = Math.cos(r);
+      el.style.transform = 'translate3d(' + (radius * Math.sin(r)).toFixed(1) + 'px,0,' + (radius * (1 - c)).toFixed(1) + 'px) rotateY(' + (-a).toFixed(1) + 'deg)';
+      el.style.filter = 'brightness(' + (0.72 + 0.5 * (1 / c - 1)).toFixed(3) + ')';
+      el.style.zIndex = String(Math.round(1000 - Math.abs(a)));
+    }
+  }
+
+  function startAnim() {
+    if (reducedMotion || typeof requestAnimationFrame === 'undefined') return;
+    last = null;
+    const tick = (t) => {
+      if (last == null) last = t;
+      const dt = Math.min((t - last) / 1000, 0.1);
+      last = t;
+      const now = performance.now();
+      if (!dragging && !(pauseUntil && now < pauseUntil)) phase -= speed * dt;
+      update();
+      rafId = requestAnimationFrame(tick);
+    };
+    rafId = requestAnimationFrame(tick);
+  }
+  function stopAnim() { if (rafId) cancelAnimationFrame(rafId); rafId = null; }
+
+  function render(items) {
+    stopAnim();
+    stage.innerHTML = '';
+    cards = [];
+    if (!items.length) {
+      const empty = document.createElement('div');
+      empty.className = 'ring-empty';
+      empty.textContent = emptyText;
+      stage.appendChild(empty);
+      return;
+    }
+    for (let i = 0; i < size; i++) {
+      const item = items[i % items.length];
+      const card = buildCard(item);
+      card.__item = item;
+      stage.appendChild(card);
+      cards.push(card);
+    }
+    update();
+    startAnim();
+  }
+
+  stage.addEventListener('pointerdown', (e) => {
+    dragging = true;
+    moved = false;
+    dragStartX = e.clientX;
+    dragStartPhase = phase;
+    const cardEl = e.target.closest ? e.target.closest('[data-ring-card]') : null;
+    downItem = cardEl ? cardEl.__item : null;
+    if (stage.setPointerCapture) { try { stage.setPointerCapture(e.pointerId); } catch (err) {} }
+  });
+  stage.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    const dx = e.clientX - dragStartX;
+    if (Math.abs(dx) > 6) moved = true;
+    phase = dragStartPhase + dx * 0.18;
+    update();
+  });
+  function end(shouldSelect) {
+    if (!dragging) return;
+    dragging = false;
+    last = null;
+    pauseUntil = performance.now() + 1600;
+    if (shouldSelect && !moved && downItem && onSelect) onSelect(downItem);
+    downItem = null;
+  }
+  stage.addEventListener('pointerup', () => end(true));
+  stage.addEventListener('pointercancel', () => end(false));
+  stage.addEventListener('pointerleave', () => end(false));
+
+  return { render };
+}
+
+/* ── Propiedades: fetch + city filter + carrusel + modal ── */
 const RING_SIZE = 12;
 const RING_RADIUS = 520;
-const RING_STEP = 360 / RING_SIZE;
-const RING_CULL_ANGLE = 50;
-const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 const ringStage = document.getElementById('ring-stage');
 const cityFiltersEl = document.getElementById('city-filters');
@@ -59,16 +164,6 @@ const modal = document.getElementById('property-modal');
 
 let allProperties = [];
 let cityFilter = 'Todas';
-let ringCards = [];
-let ringPhase = -2;
-let ringLast = null;
-let ringRafId = null;
-let ringDragging = false;
-let ringMoved = false;
-let ringDragStartX = 0;
-let ringDragStartPhase = 0;
-let ringPauseUntil = 0;
-
 let selectedProperty = null;
 let selectedPhotoIndex = 0;
 
@@ -76,11 +171,28 @@ function placeholderImgHtml(title) {
   return '<div class="ring-card-img-placeholder">' + escapeHtml(title || 'BASTET') + '</div>';
 }
 
-function escapeHtml(str) {
-  const div = document.createElement('div');
-  div.textContent = str ?? '';
-  return div.innerHTML;
+function buildPropertyCard(property) {
+  const card = document.createElement('div');
+  card.className = 'ring-card';
+  card.setAttribute('data-ring-card', '');
+  const firstPhoto = (property.photos && property.photos[0]) || null;
+  card.innerHTML = firstPhoto
+    ? '<img class="ring-card-img" src="' + escapeHtml(firstPhoto) + '" alt="' + escapeHtml(property.title) + '" loading="lazy">'
+    : placeholderImgHtml(property.title);
+  card.innerHTML +=
+    '<div class="ring-card-overlay"></div>' +
+    '<div class="ring-card-label"><span>' + (property.featured ? '★ ' : '') + escapeHtml(property.title) + '</span></div>';
+  return card;
 }
+
+const propertyRing = createRingCarousel({
+  stage: ringStage,
+  radius: RING_RADIUS,
+  size: RING_SIZE,
+  buildCard: buildPropertyCard,
+  onSelect: (property) => openProperty(property),
+  emptyText: 'Pronto publicaremos nuevas propiedades disponibles.',
+});
 
 async function loadProperties() {
   const { data, error } = await supabaseClient
@@ -97,7 +209,7 @@ async function loadProperties() {
   }
 
   buildCityFilters();
-  renderRing();
+  renderPropertyRing();
 }
 
 function buildCityFilters() {
@@ -115,7 +227,7 @@ function buildCityFilters() {
     btn.addEventListener('click', () => {
       cityFilter = city;
       buildCityFilters();
-      renderRing();
+      renderPropertyRing();
     });
     cityFiltersEl.appendChild(btn);
   });
@@ -142,114 +254,9 @@ function buildRingPool(list) {
   return pool;
 }
 
-function renderRing() {
-  stopRingAnimation();
-  ringStage.innerHTML = '';
-  ringCards = [];
-
-  const list = filteredProperties();
-  if (!list.length) {
-    const empty = document.createElement('div');
-    empty.className = 'ring-empty';
-    empty.textContent = 'Pronto publicaremos nuevas propiedades disponibles.';
-    ringStage.appendChild(empty);
-    return;
-  }
-
-  const pool = buildRingPool(list);
-  for (let i = 0; i < RING_SIZE; i++) {
-    const property = pool[i % pool.length];
-    const card = document.createElement('div');
-    card.className = 'ring-card';
-
-    const firstPhoto = (property.photos && property.photos[0]) || null;
-    card.innerHTML = firstPhoto
-      ? '<img class="ring-card-img" src="' + escapeHtml(firstPhoto) + '" alt="' + escapeHtml(property.title) + '" loading="lazy">'
-      : placeholderImgHtml(property.title);
-    card.innerHTML +=
-      '<div class="ring-card-overlay"></div>' +
-      '<div class="ring-card-label"><span>' + (property.featured ? '★ ' : '') + escapeHtml(property.title) + '</span></div>';
-
-    card.__property = property;
-
-    ringStage.appendChild(card);
-    ringCards.push(card);
-  }
-
-  updateRing();
-  startRingAnimation();
+function renderPropertyRing() {
+  propertyRing.render(buildRingPool(filteredProperties()));
 }
-
-function updateRing() {
-  for (let i = 0; i < ringCards.length; i++) {
-    const el = ringCards[i];
-    if (!el) continue;
-    let a = ((i * RING_STEP + ringPhase) % 360 + 540) % 360 - 180;
-    if (Math.abs(a) > RING_CULL_ANGLE) { el.style.visibility = 'hidden'; continue; }
-    el.style.visibility = 'visible';
-    const r = (a * Math.PI) / 180, c = Math.cos(r);
-    el.style.transform = 'translate3d(' + (RING_RADIUS * Math.sin(r)).toFixed(1) + 'px,0,' + (RING_RADIUS * (1 - c)).toFixed(1) + 'px) rotateY(' + (-a).toFixed(1) + 'deg)';
-    el.style.filter = 'brightness(' + (0.72 + 0.5 * (1 / c - 1)).toFixed(3) + ')';
-    el.style.zIndex = String(Math.round(1000 - Math.abs(a)));
-  }
-}
-
-function startRingAnimation() {
-  if (reducedMotion || typeof requestAnimationFrame === 'undefined') return;
-  ringLast = null;
-  const tick = (t) => {
-    if (ringLast == null) ringLast = t;
-    const dt = Math.min((t - ringLast) / 1000, 0.1);
-    ringLast = t;
-    const now = performance.now();
-    if (!ringDragging && !(ringPauseUntil && now < ringPauseUntil)) {
-      ringPhase -= 5 * dt;
-    }
-    updateRing();
-    ringRafId = requestAnimationFrame(tick);
-  };
-  ringRafId = requestAnimationFrame(tick);
-}
-
-function stopRingAnimation() {
-  if (ringRafId) cancelAnimationFrame(ringRafId);
-  ringRafId = null;
-}
-
-let ringDownProperty = null;
-
-ringStage.addEventListener('pointerdown', (e) => {
-  ringDragging = true;
-  ringMoved = false;
-  ringDragStartX = e.clientX;
-  ringDragStartPhase = ringPhase;
-  // Se resuelve la tarjeta AHORA, en el instante más preciso posible: el anillo
-  // rota continuamente, así que para cuando el navegador procese el evento
-  // "click" nativo (tras el pointerup) la tarjeta ya pudo haberse movido y el
-  // hit-test del click puede fallar. Usamos esta referencia en vez del target
-  // del evento click.
-  const cardEl = e.target.closest ? e.target.closest('.ring-card') : null;
-  ringDownProperty = cardEl ? cardEl.__property : null;
-  if (ringStage.setPointerCapture) { try { ringStage.setPointerCapture(e.pointerId); } catch (err) {} }
-});
-ringStage.addEventListener('pointermove', (e) => {
-  if (!ringDragging) return;
-  const dx = e.clientX - ringDragStartX;
-  if (Math.abs(dx) > 6) ringMoved = true;
-  ringPhase = ringDragStartPhase + dx * 0.18;
-  updateRing();
-});
-function endRingDrag(shouldSelect) {
-  if (!ringDragging) return;
-  ringDragging = false;
-  ringLast = null;
-  ringPauseUntil = performance.now() + 1600;
-  if (shouldSelect && !ringMoved && ringDownProperty) openProperty(ringDownProperty);
-  ringDownProperty = null;
-}
-ringStage.addEventListener('pointerup', () => endRingDrag(true));
-ringStage.addEventListener('pointercancel', () => endRingDrag(false));
-ringStage.addEventListener('pointerleave', () => endRingDrag(false));
 
 /* ── Modal ── */
 function openProperty(property) {
@@ -317,6 +324,54 @@ document.addEventListener('keydown', (e) => {
 });
 
 loadProperties();
+
+/* ── Testimonios: fetch + carrusel (mismo efecto de anillo que Propiedades) ── */
+const TESTI_RING_SIZE = 10;
+const TESTI_RING_RADIUS = 640;
+const testiRingStage = document.getElementById('testi-ring-stage');
+
+function buildTestimonialCard(t) {
+  const card = document.createElement('div');
+  card.className = 'testi-ring-card';
+  card.setAttribute('data-ring-card', '');
+  const initial = (t.name || '?').trim().charAt(0).toUpperCase();
+  const photo = t.photo_url
+    ? '<img class="testi-ring-photo" src="' + escapeHtml(t.photo_url) + '" alt="' + escapeHtml(t.name) + '" loading="lazy">'
+    : '<div class="testi-ring-photo testi-ring-photo-placeholder">' + escapeHtml(initial) + '</div>';
+  card.innerHTML =
+    '<div class="testi-ring-header">' +
+      photo +
+      '<div class="testi-ring-who"><p class="testi-ring-name">' + escapeHtml(t.name) + '</p><p class="testi-ring-role">' + escapeHtml(t.role_label) + '</p></div>' +
+    '</div>' +
+    '<p class="testi-ring-quote">&ldquo;' + escapeHtml(t.quote) + '&rdquo;</p>';
+  return card;
+}
+
+const testimonialRing = testiRingStage ? createRingCarousel({
+  stage: testiRingStage,
+  radius: TESTI_RING_RADIUS,
+  size: TESTI_RING_SIZE,
+  buildCard: buildTestimonialCard,
+  emptyText: 'Pronto compartiremos las experiencias de nuestros clientes.',
+}) : null;
+
+async function loadTestimonials() {
+  if (!testimonialRing) return;
+  const { data, error } = await supabaseClient
+    .from('testimonials')
+    .select('*')
+    .eq('is_active', true)
+    .order('sort_order', { ascending: true });
+
+  if (error) {
+    console.error('Error cargando testimonios:', error);
+    testimonialRing.render([]);
+    return;
+  }
+  testimonialRing.render(data || []);
+}
+
+loadTestimonials();
 
 /* ── Franja de logos de empresas aliadas ── */
 async function loadPartners() {

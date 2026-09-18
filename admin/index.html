@@ -98,6 +98,7 @@
     <div class="admin-tabs">
       <button type="button" class="admin-tab is-active" data-tab="properties">Propiedades</button>
       <button type="button" class="admin-tab admin-only-tab hidden" data-tab="partners">Marcas</button>
+      <button type="button" class="admin-tab admin-only-tab hidden" data-tab="testimonials">Testimonios</button>
       <button type="button" class="admin-tab admin-only-tab hidden" data-tab="admins">Administradores</button>
       <button type="button" class="admin-tab" data-tab="account">Mi cuenta</button>
     </div>
@@ -136,6 +137,40 @@
       </div>
 
       <div id="partner-list" class="partner-list"></div>
+    </div>
+
+    <div id="tab-panel-testimonials" class="tab-panel hidden">
+      <div class="admin-toolbar">
+        <div>
+          <h1>Testimonios</h1>
+          <p class="admin-toolbar-hint">Testimonios de clientes que aparecen en el carrusel del landing. Arrastra por ⠿ para reordenar.</p>
+        </div>
+      </div>
+
+      <form id="testimonial-add-form" class="invite-admin-card">
+        <div class="field">
+          <label for="testimonial-name-input">Nombre</label>
+          <input type="text" id="testimonial-name-input" required placeholder="Ej: Familia Rojas Mamani">
+        </div>
+        <div class="field">
+          <label for="testimonial-role-input">Descripción breve</label>
+          <input type="text" id="testimonial-role-input" required placeholder="Ej: Vendieron su casa en La Paz">
+        </div>
+        <div class="field">
+          <label for="testimonial-quote-input">Testimonio</label>
+          <textarea id="testimonial-quote-input" rows="3" required placeholder="Escribe el testimonio del cliente…"></textarea>
+        </div>
+        <div class="field">
+          <label>Foto (opcional, circular)</label>
+          <div id="testimonial-dropzone" class="photo-dropzone">Haz clic o arrastra una imagen aquí</div>
+          <input type="file" id="testimonial-photo-input" accept="image/*" style="display:none;">
+          <div id="testimonial-photo-preview"></div>
+        </div>
+        <p id="testimonial-add-error" class="form-error hidden"></p>
+        <button type="submit" id="testimonial-add-submit" class="btn btn-accent">+ Agregar testimonio</button>
+      </form>
+
+      <div id="testimonial-list" class="partner-list"></div>
     </div>
 
     <div id="tab-panel-admins" class="tab-panel hidden">

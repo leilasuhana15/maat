@@ -563,6 +563,7 @@ document.querySelectorAll('.admin-tab').forEach((btn) => {
       panel.classList.toggle('hidden', panel.id !== 'tab-panel-' + btn.dataset.tab);
     });
     if (btn.dataset.tab === 'partners') loadPartners();
+    if (btn.dataset.tab === 'testimonials') loadTestimonials();
     if (btn.dataset.tab === 'admins') loadUsers();
   });
 });
@@ -694,6 +695,183 @@ partnerDropzone.addEventListener('drop', (e) => {
   if (e.dataTransfer.files[0]) addPartner(e.dataTransfer.files[0]);
 });
 
+/* ── Testimonios ── */
+let testimonials = [];
+let testimonialDragSrcId = null;
+let testimonialPhotoUrl = null;
+const testimonialListEl = document.getElementById('testimonial-list');
+const testimonialAddForm = document.getElementById('testimonial-add-form');
+const testimonialAddError = document.getElementById('testimonial-add-error');
+const testimonialDropzone = document.getElementById('testimonial-dropzone');
+const testimonialPhotoInput = document.getElementById('testimonial-photo-input');
+const testimonialPhotoPreview = document.getElementById('testimonial-photo-preview');
+const TESTIMONIAL_PHOTOS_BUCKET = 'testimonial-photos';
+
+async function loadTestimonials() {
+  testimonialListEl.innerHTML = '<p class="property-empty">Cargando…</p>';
+  const { data, error } = await supabaseClient.from('testimonials').select('*').order('sort_order', { ascending: true });
+  if (error) {
+    testimonialListEl.innerHTML = '<p class="property-empty">Error al cargar: ' + escapeHtml(error.message) + '</p>';
+    return;
+  }
+  testimonials = data || [];
+  renderTestimonialList();
+}
+
+function renderTestimonialList() {
+  if (!testimonials.length) {
+    testimonialListEl.innerHTML = '<p class="property-empty">Aún no hay testimonios. Agrega el primero arriba.</p>';
+    return;
+  }
+  testimonialListEl.innerHTML = '';
+  testimonials.forEach((testimonial) => {
+    const row = document.createElement('div');
+    row.className = 'partner-row';
+    row.draggable = true;
+    row.dataset.id = testimonial.id;
+
+    const initial = (testimonial.name || '?').trim().charAt(0).toUpperCase();
+    const photo = testimonial.photo_url
+      ? '<img class="testimonial-photo-thumb" src="' + escapeHtml(testimonial.photo_url) + '" alt="">'
+      : '<div class="testimonial-photo-thumb-placeholder">' + escapeHtml(initial) + '</div>';
+
+    row.innerHTML =
+      '<span class="property-drag-handle" title="Arrastra para reordenar">⠿</span>' +
+      photo +
+      '<div class="testimonial-info">' +
+        '<p class="testimonial-info-name">' + escapeHtml(testimonial.name) + '</p>' +
+        '<p class="testimonial-info-role">' + escapeHtml(testimonial.role_label) + '</p>' +
+        '<p class="testimonial-info-quote">&ldquo;' + escapeHtml(testimonial.quote) + '&rdquo;</p>' +
+      '</div>' +
+      '<button type="button" class="btn btn-danger btn-sm" data-action="delete">Eliminar</button>';
+
+    row.querySelector('[data-action="delete"]').addEventListener('click', () => deleteTestimonial(testimonial));
+
+    row.addEventListener('dragstart', (e) => {
+      testimonialDragSrcId = testimonial.id;
+      row.classList.add('is-dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    row.addEventListener('dragend', () => row.classList.remove('is-dragging'));
+    row.addEventListener('dragover', (e) => { e.preventDefault(); row.classList.add('drag-over'); });
+    row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
+    row.addEventListener('drop', (e) => {
+      e.preventDefault();
+      row.classList.remove('drag-over');
+      if (testimonialDragSrcId && testimonialDragSrcId !== testimonial.id) reorderTestimonials(testimonialDragSrcId, testimonial.id);
+    });
+
+    testimonialListEl.appendChild(row);
+  });
+}
+
+async function reorderTestimonials(srcId, targetId) {
+  const srcIndex = testimonials.findIndex((t) => t.id === srcId);
+  const targetIndex = testimonials.findIndex((t) => t.id === targetId);
+  if (srcIndex === -1 || targetIndex === -1) return;
+  const [moved] = testimonials.splice(srcIndex, 1);
+  testimonials.splice(targetIndex, 0, moved);
+  testimonials.forEach((t, i) => { t.sort_order = i; });
+  renderTestimonialList();
+  await Promise.all(testimonials.map((t) => supabaseClient.from('testimonials').update({ sort_order: t.sort_order }).eq('id', t.id)));
+}
+
+function testimonialStoragePathFromUrl(url) {
+  const marker = '/object/public/' + TESTIMONIAL_PHOTOS_BUCKET + '/';
+  const idx = url.indexOf(marker);
+  if (idx === -1) return null;
+  return decodeURIComponent(url.slice(idx + marker.length));
+}
+
+async function deleteTestimonial(testimonial) {
+  if (!confirm('¿Eliminar el testimonio de "' + testimonial.name + '"?')) return;
+  if (testimonial.photo_url) {
+    const path = testimonialStoragePathFromUrl(testimonial.photo_url);
+    if (path) { try { await supabaseClient.storage.from(TESTIMONIAL_PHOTOS_BUCKET).remove([path]); } catch (err) { /* best effort */ } }
+  }
+  const { error } = await supabaseClient.from('testimonials').delete().eq('id', testimonial.id);
+  if (error) { alert('Error al eliminar: ' + error.message); return; }
+  loadTestimonials();
+}
+
+function renderTestimonialPhotoPreview() {
+  testimonialPhotoPreview.innerHTML = '';
+  if (!testimonialPhotoUrl) return;
+  const thumb = document.createElement('div');
+  thumb.className = 'photo-thumb';
+  thumb.style.marginTop = '10px';
+  thumb.innerHTML =
+    '<img src="' + escapeHtml(testimonialPhotoUrl) + '" alt="">' +
+    '<button type="button" class="photo-remove" aria-label="Quitar foto">×</button>';
+  thumb.querySelector('.photo-remove').addEventListener('click', () => { testimonialPhotoUrl = null; renderTestimonialPhotoPreview(); });
+  testimonialPhotoPreview.appendChild(thumb);
+}
+
+async function uploadTestimonialPhoto(file) {
+  const placeholder = document.createElement('div');
+  placeholder.className = 'photo-thumb is-uploading';
+  placeholder.style.marginTop = '10px';
+  testimonialPhotoPreview.appendChild(placeholder);
+
+  const path = crypto.randomUUID() + '/' + Date.now() + '-' + sanitizeFilename(file.name);
+  const { error: uploadError } = await supabaseClient.storage.from(TESTIMONIAL_PHOTOS_BUCKET).upload(path, file);
+  placeholder.remove();
+  if (uploadError) {
+    testimonialAddError.textContent = 'Error al subir la foto: ' + uploadError.message;
+    testimonialAddError.classList.remove('hidden');
+    return;
+  }
+  const { data } = supabaseClient.storage.from(TESTIMONIAL_PHOTOS_BUCKET).getPublicUrl(path);
+  testimonialPhotoUrl = data.publicUrl;
+  renderTestimonialPhotoPreview();
+}
+
+testimonialDropzone.addEventListener('click', () => testimonialPhotoInput.click());
+testimonialPhotoInput.addEventListener('change', () => {
+  if (testimonialPhotoInput.files[0]) uploadTestimonialPhoto(testimonialPhotoInput.files[0]);
+  testimonialPhotoInput.value = '';
+});
+testimonialDropzone.addEventListener('dragover', (e) => { e.preventDefault(); testimonialDropzone.classList.add('is-dragover'); });
+testimonialDropzone.addEventListener('dragleave', () => testimonialDropzone.classList.remove('is-dragover'));
+testimonialDropzone.addEventListener('drop', (e) => {
+  e.preventDefault();
+  testimonialDropzone.classList.remove('is-dragover');
+  if (e.dataTransfer.files[0]) uploadTestimonialPhoto(e.dataTransfer.files[0]);
+});
+
+testimonialAddForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  testimonialAddError.classList.add('hidden');
+
+  const name = document.getElementById('testimonial-name-input').value.trim();
+  const roleLabel = document.getElementById('testimonial-role-input').value.trim();
+  const quote = document.getElementById('testimonial-quote-input').value.trim();
+  if (!name || !roleLabel || !quote) {
+    testimonialAddError.textContent = 'Completa todos los campos obligatorios.';
+    testimonialAddError.classList.remove('hidden');
+    return;
+  }
+
+  const btn = document.getElementById('testimonial-add-submit');
+  btn.disabled = true;
+  const sortOrder = testimonials.length ? Math.max(...testimonials.map((t) => t.sort_order)) + 1 : 0;
+  const { error } = await supabaseClient.from('testimonials').insert({
+    name, role_label: roleLabel, quote, photo_url: testimonialPhotoUrl, sort_order: sortOrder,
+  });
+  btn.disabled = false;
+
+  if (error) {
+    testimonialAddError.textContent = 'Error al guardar: ' + error.message;
+    testimonialAddError.classList.remove('hidden');
+    return;
+  }
+
+  testimonialAddForm.reset();
+  testimonialPhotoUrl = null;
+  renderTestimonialPhotoPreview();
+  loadTestimonials();
+});
+
 /* ── Administradores: invitar nuevos usuarios (vía Edge Function, ver supabase/functions/invite-admin) ── */
 document.getElementById('invite-admin-form').addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -752,12 +930,17 @@ function renderUserList(users) {
 
     row.innerHTML =
       '<span class="user-row-email">' + escapeHtml(user.email || user.id) + (isSelf ? ' (tú)' : '') + '</span>' +
-      '<span class="role-tag ' + (user.role === 'admin' ? 'admin' : 'agent') + '">' + (user.role === 'admin' ? 'Admin' : 'Agente') + '</span>' +
+      (isSelf
+        ? '<span class="role-tag ' + (user.role === 'admin' ? 'admin' : 'agent') + '">' + (user.role === 'admin' ? 'Admin' : 'Agente') + '</span>'
+        : '<select class="role-select" data-action="role"><option value="agent"' + (user.role === 'agent' ? ' selected' : '') + '>Agente</option><option value="admin"' + (user.role === 'admin' ? ' selected' : '') + '>Admin</option></select>') +
       '<span class="status-badge ' + (user.is_active ? 'available' : 'sold') + '">' + (user.is_active ? 'Activo' : 'Desactivado') + '</span>' +
       (isSelf ? '' : '<button type="button" class="btn btn-sm ' + (user.is_active ? 'btn-danger' : 'btn-ghost') + '" data-action="toggle">' + (user.is_active ? 'Desactivar' : 'Reactivar') + '</button>');
 
     const toggleBtn = row.querySelector('[data-action="toggle"]');
     if (toggleBtn) toggleBtn.addEventListener('click', () => toggleUserActive(user));
+
+    const roleSelect = row.querySelector('[data-action="role"]');
+    if (roleSelect) roleSelect.addEventListener('change', () => changeUserRole(user, roleSelect));
 
     userListEl.appendChild(row);
   });
@@ -769,6 +952,21 @@ async function toggleUserActive(user) {
   if (!confirm('¿Seguro que quieres ' + verb + ' a ' + (user.email || user.id) + '?')) return;
   const { error } = await supabaseClient.from('profiles').update({ is_active: nextActive }).eq('id', user.id);
   if (error) { alert('Error: ' + error.message); return; }
+  loadUsers();
+}
+
+async function changeUserRole(user, selectEl) {
+  const nextRole = selectEl.value;
+  if (nextRole === user.role) return;
+  const label = nextRole === 'admin' ? 'administrador' : 'agente';
+  if (!confirm('¿Cambiar a ' + (user.email || user.id) + ' a ' + label + '?')) {
+    selectEl.value = user.role;
+    return;
+  }
+  selectEl.disabled = true;
+  const { error } = await supabaseClient.from('profiles').update({ role: nextRole }).eq('id', user.id);
+  selectEl.disabled = false;
+  if (error) { alert('Error: ' + error.message); selectEl.value = user.role; return; }
   loadUsers();
 }
 

@@ -290,3 +290,96 @@ create policy "admin can delete partner logos"
   on storage.objects for delete
   to authenticated
   using (bucket_id = 'partner-logos' and public.is_admin());
+
+-- ── Tabla testimonials (testimonios de clientes, franja del landing) ──
+-- Solo administradores gestionan los testimonios (los agentes no).
+create table if not exists public.testimonials (
+  id           uuid primary key default gen_random_uuid(),
+  name         text not null,
+  role_label   text not null default '', -- ej: "Vendió su departamento en La Paz con Bastet"
+  quote        text not null,
+  photo_url    text,
+  sort_order   integer not null default 0,
+  is_active    boolean not null default true,
+  created_at   timestamptz not null default now()
+);
+
+create index if not exists testimonials_sort_order_idx on public.testimonials (sort_order);
+
+alter table public.testimonials enable row level security;
+
+drop policy if exists "public can read active testimonials" on public.testimonials;
+create policy "public can read active testimonials"
+  on public.testimonials for select
+  to anon
+  using (is_active = true);
+
+drop policy if exists "authenticated can read all testimonials" on public.testimonials;
+create policy "authenticated can read all testimonials"
+  on public.testimonials for select
+  to authenticated
+  using (true);
+
+drop policy if exists "admin can insert testimonials" on public.testimonials;
+create policy "admin can insert testimonials"
+  on public.testimonials for insert
+  to authenticated
+  with check (public.is_admin());
+
+drop policy if exists "admin can update testimonials" on public.testimonials;
+create policy "admin can update testimonials"
+  on public.testimonials for update
+  to authenticated
+  using (public.is_admin())
+  with check (public.is_admin());
+
+drop policy if exists "admin can delete testimonials" on public.testimonials;
+create policy "admin can delete testimonials"
+  on public.testimonials for delete
+  to authenticated
+  using (public.is_admin());
+
+-- ── Storage: bucket de fotos de testimonios ──────────────────────
+insert into storage.buckets (id, name, public)
+values ('testimonial-photos', 'testimonial-photos', true)
+on conflict (id) do nothing;
+
+drop policy if exists "public can view testimonial photos" on storage.objects;
+create policy "public can view testimonial photos"
+  on storage.objects for select
+  to public
+  using (bucket_id = 'testimonial-photos');
+
+drop policy if exists "admin can upload testimonial photos" on storage.objects;
+create policy "admin can upload testimonial photos"
+  on storage.objects for insert
+  to authenticated
+  with check (bucket_id = 'testimonial-photos' and public.is_admin());
+
+drop policy if exists "admin can update testimonial photos" on storage.objects;
+create policy "admin can update testimonial photos"
+  on storage.objects for update
+  to authenticated
+  using (bucket_id = 'testimonial-photos' and public.is_admin());
+
+drop policy if exists "admin can delete testimonial photos" on storage.objects;
+create policy "admin can delete testimonial photos"
+  on storage.objects for delete
+  to authenticated
+  using (bucket_id = 'testimonial-photos' and public.is_admin());
+
+-- Testimonios iniciales. Los uuid son fijos para que sea seguro volver a
+-- correr este script sin duplicar filas. photo_url apunta a las imágenes
+-- estáticas en assets/img/testimonials/ (no requieren Supabase Storage).
+insert into public.testimonials (id, name, role_label, quote, photo_url, sort_order) values
+  ('a1b2c3d4-0001-4000-8000-000000000001', 'María Elena Rojas', 'Vendió su departamento en La Paz con Bastet', 'Todo el proceso se sintió acompañado de principio a fin. Nunca tuve que preocuparme por los trámites, siempre supe en qué paso estábamos.', 'assets/img/testimonials/testi-05.jpg', 0),
+  ('a1b2c3d4-0001-4000-8000-000000000002', 'Carlos Fernández', 'Compró su primera casa en Santa Cruz de la Sierra', 'Buscaba certeza más que rapidez, y eso fue exactamente lo que encontré. Cada documento fue revisado con una seriedad que me dio mucha tranquilidad.', 'assets/img/testimonials/testi-09.jpg', 1),
+  ('a1b2c3d4-0001-4000-8000-000000000003', 'Familia Quispe Mamani', 'Vendieron su terreno en Cochabamba', 'Confiamos nuestro patrimonio familiar a Bastet y sentimos en cada momento que lo cuidaban como si fuera propio.', 'assets/img/testimonials/testi-06.jpg', 2),
+  ('a1b2c3d4-0001-4000-8000-000000000004', 'Andrés Villarroel', 'Compró su departamento en El Alto', 'La claridad con la que me explicaron cada cláusula del contrato hizo toda la diferencia. Firmé sabiendo exactamente qué estaba adquiriendo.', 'assets/img/testimonials/testi-02.jpg', 3),
+  ('a1b2c3d4-0001-4000-8000-000000000005', 'Familia Torrez Salazar', 'Vendieron su casa en Sucre', 'Un acompañamiento sereno y profesional. Los plazos que nos dieron al inicio se cumplieron tal cual se acordó.', 'assets/img/testimonials/testi-08.jpg', 4),
+  ('a1b2c3d4-0001-4000-8000-000000000006', 'Daniela Ríos', 'Compró su oficina en Santa Cruz de la Sierra', 'Se nota la experiencia en cada detalle. Resolvieron dudas que ni yo sabía que tenía que hacerme antes de firmar.', 'assets/img/testimonials/testi-04.jpg', 5),
+  ('a1b2c3d4-0001-4000-8000-000000000007', 'Familia Gutiérrez Paz', 'Vendieron su propiedad en Tarija', 'Nos sentimos protegidos durante toda la negociación, nunca presionados. Así es como debería sentirse vender algo tan importante.', 'assets/img/testimonials/testi-10.jpg', 6),
+  ('a1b2c3d4-0001-4000-8000-000000000008', 'Jorge Luis Medina', 'Compró su casa en Oruro', 'La verificación registral que hicieron descubrió un detalle que yo jamás habría notado. Eso solo ya justificó la decisión de trabajar con ellos.', 'assets/img/testimonials/testi-01.jpg', 7),
+  ('a1b2c3d4-0001-4000-8000-000000000009', 'Familia Choque Ibáñez', 'Vendieron su departamento en Potosí', 'Un equipo que realmente escucha. Adaptaron el proceso a nuestro ritmo sin nunca perder seriedad ni orden.', 'assets/img/testimonials/testi-03.jpg', 8),
+  ('a1b2c3d4-0001-4000-8000-000000000010', 'Valeria Ontiveros', 'Compró su primer departamento en La Paz', 'Era mi primera compra y tenía muchas dudas. Me guiaron con una paciencia y una claridad que no esperaba encontrar.', 'assets/img/testimonials/testi-07.jpg', 9)
+on conflict (id) do nothing;

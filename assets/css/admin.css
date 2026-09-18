@@ -261,6 +261,25 @@ input, textarea, select { font-family: inherit; }
 .role-tag.admin { background: rgba(242,176,53,0.18); color: #8a6a2c; }
 .role-tag.agent { background: rgba(44,64,45,0.1); color: var(--color-primary); }
 .user-row.is-inactive { opacity: 0.55; }
+.role-select {
+  font-size: 12px; font-weight: 600; padding: 5px 8px; border-radius: 6px;
+  border: 1px solid rgba(44,64,45,0.2); background: #fff; color: var(--color-dark-text); cursor: pointer;
+}
+
+/* ── Testimonios ── */
+.testimonial-photo-thumb { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.testimonial-photo-thumb-placeholder {
+  width: 44px; height: 44px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(44,64,45,0.1); color: var(--color-primary); font-weight: 600; font-size: 15px;
+}
+.testimonial-info { flex: 1; min-width: 0; }
+.testimonial-info-name { font-size: 14px; font-weight: 600; color: var(--color-dark-text); margin: 0; }
+.testimonial-info-role { font-size: 12px; color: var(--color-dark-text); opacity: 0.6; margin: 2px 0 0; }
+.testimonial-info-quote {
+  font-size: 13px; color: var(--color-dark-text); opacity: 0.75; margin: 4px 0 0; font-style: italic;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 480px;
+}
 
 /* ── Checkbox (Destacado) ── */
 .checkbox-label { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 500; color: var(--color-dark-text); cursor: pointer; }
