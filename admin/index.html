@@ -203,18 +203,22 @@
         </select>
       </div>
       <div class="field">
-        <label for="location-search">Ubicar en el mapa (opcional)</label>
+        <label for="location-search">Dirección</label>
         <div class="location-search-row">
-          <input type="text" id="location-search" placeholder="Busca una dirección o zona para confirmar la ciudad…">
+          <input type="text" id="location-search" placeholder="Ej: Av. Arce #2450, Zona Sur — escribe y presiona Buscar">
           <button type="button" id="location-search-btn" class="btn btn-ghost btn-sm">Buscar</button>
         </div>
         <div id="location-map" class="location-map"></div>
-        <p class="field-hint" id="location-map-hint">Si reconocemos la ciudad en el mapa, la seleccionamos automáticamente arriba.</p>
+        <p class="field-hint" id="location-map-hint">Escribe la dirección y presiona Buscar para ubicarla en el mapa, o haz clic directo en el mapa y la dirección se completa sola arriba.</p>
       </div>
-      <div class="field-row">
+      <div class="field-row-3">
         <div class="field">
-          <label for="field-price">Precio</label>
-          <input type="text" id="field-price" required placeholder="USD 185,000">
+          <label for="field-price">Precio (en USD)</label>
+          <input type="text" id="field-price" required placeholder="Ej: 185,000">
+        </div>
+        <div class="field">
+          <label for="field-exchange-rate">Tipo de cambio aceptado (opcional)</label>
+          <input type="text" id="field-exchange-rate" placeholder="Ej: 1 USD = 6.96 Bs">
         </div>
         <div class="field">
           <label for="field-status">Estado</label>
@@ -293,6 +297,17 @@
         <button type="submit" id="property-form-submit" class="btn btn-primary">Guardar</button>
       </div>
     </form>
+  </div>
+</div>
+
+<!-- DETAIL MODAL (ver información completa de una propiedad) -->
+<div id="property-detail-modal" class="modal-overlay hidden">
+  <div class="modal-panel">
+    <div class="detail-header">
+      <h2 id="detail-title"></h2>
+      <button type="button" id="property-detail-close" class="btn btn-ghost btn-sm">Cerrar</button>
+    </div>
+    <div id="property-detail-body"></div>
   </div>
 </div>
 

@@ -156,7 +156,7 @@ function renderPropertyList() {
   propertyListEl.innerHTML = '';
   properties.forEach((property) => {
     const row = document.createElement('div');
-    row.className = 'property-row';
+    row.className = 'property-row property-row-clickable';
     row.draggable = isAdmin;
     row.dataset.id = property.id;
 
@@ -174,15 +174,19 @@ function renderPropertyList() {
         '<p class="property-info-title">' + (property.featured ? '★ ' : '') + escapeHtml(property.title) + '</p>' +
         '<p class="property-info-meta">' + escapeHtml(property.location) + ' · ' + escapeHtml(property.area) + ' · ' + escapeHtml(property.rooms) + '</p>' +
       '</div>' +
-      '<span class="property-price">' + escapeHtml(property.price) + '</span>' +
+      '<span class="property-price">USD ' + escapeHtml(property.price) + '</span>' +
       '<span class="status-badge ' + (property.status === 'sold' ? 'sold' : 'available') + '">' + (property.status === 'sold' ? 'Vendida' : 'Disponible') + '</span>' +
       '<div class="property-actions">' +
         '<button class="btn btn-ghost btn-sm" data-action="edit">Editar</button>' +
         '<button class="btn btn-danger btn-sm" data-action="delete">Eliminar</button>' +
       '</div>';
 
-    row.querySelector('[data-action="edit"]').addEventListener('click', () => openPropertyForm(property));
-    row.querySelector('[data-action="delete"]').addEventListener('click', () => deleteProperty(property));
+    row.querySelector('[data-action="edit"]').addEventListener('click', (e) => { e.stopPropagation(); openPropertyForm(property); });
+    row.querySelector('[data-action="delete"]').addEventListener('click', (e) => { e.stopPropagation(); deleteProperty(property); });
+    row.addEventListener('click', (e) => {
+      if (e.target.closest('[data-action]') || e.target.closest('.property-drag-handle')) return;
+      openPropertyDetail(property);
+    });
 
     row.addEventListener('dragstart', (e) => {
       dragSrcId = property.id;
@@ -229,6 +233,72 @@ async function deleteProperty(property) {
   loadProperties();
 }
 
+/* ── Detalle de propiedad (solo lectura, clic en la fila) ── */
+const GENERAL_WHATSAPP_PHONE = '59177666205';
+const detailModal = document.getElementById('property-detail-modal');
+const detailTitleEl = document.getElementById('detail-title');
+const detailBodyEl = document.getElementById('property-detail-body');
+let profilesEmailById = null;
+
+function normalizePhoneDigits(str) {
+  return (str || '').replace(/[^0-9]/g, '');
+}
+
+async function getProfilesEmailMap() {
+  if (profilesEmailById) return profilesEmailById;
+  profilesEmailById = {};
+  if (!currentProfile || currentProfile.role !== 'admin') return profilesEmailById;
+  const { data, error } = await supabaseClient.from('profiles').select('id, email');
+  if (!error && data) data.forEach((p) => { profilesEmailById[p.id] = p.email; });
+  return profilesEmailById;
+}
+
+async function openPropertyDetail(property) {
+  const isAdmin = currentProfile && currentProfile.role === 'admin';
+  detailTitleEl.textContent = (property.featured ? '★ ' : '') + property.title;
+
+  const photos = (property.photos || []).map((url) =>
+    '<img src="' + escapeHtml(url) + '" alt="">'
+  ).join('');
+
+  const whatsappDigits = normalizePhoneDigits(property.whatsapp) || GENERAL_WHATSAPP_PHONE;
+  const whatsappLabel = property.whatsapp ? property.whatsapp : GENERAL_WHATSAPP_PHONE + ' (número general de la firma)';
+
+  let ownerRow = '';
+  if (isAdmin) {
+    const emailMap = await getProfilesEmailMap();
+    const ownerEmail = property.owner_id ? (emailMap[property.owner_id] || 'Usuario eliminado') : 'Sin asignar';
+    ownerRow = '<div><p class="detail-label">Agente responsable</p><p class="detail-value">' + escapeHtml(ownerEmail) + '</p></div>';
+  }
+
+  detailBodyEl.innerHTML =
+    (photos ? '<div class="detail-photos">' + photos + '</div>' : '') +
+    '<div class="detail-grid">' +
+      '<div><p class="detail-label">Estado</p><p class="detail-value">' + (property.status === 'sold' ? 'Vendida' : 'Disponible') + '</p></div>' +
+      '<div><p class="detail-label">Precio</p><p class="detail-value">USD ' + escapeHtml(property.price) + '</p></div>' +
+      (property.exchange_rate ? '<div><p class="detail-label">Tipo de cambio aceptado</p><p class="detail-value">' + escapeHtml(property.exchange_rate) + '</p></div>' : '') +
+      '<div><p class="detail-label">Ciudad</p><p class="detail-value">' + escapeHtml(property.location) + '</p></div>' +
+      (property.address ? '<div><p class="detail-label">Dirección</p><p class="detail-value">' + escapeHtml(property.address) + '</p></div>' : '') +
+      '<div><p class="detail-label">Área</p><p class="detail-value">' + escapeHtml(property.area) + '</p></div>' +
+      '<div><p class="detail-label">Ambientes</p><p class="detail-value">' + escapeHtml(property.rooms) + '</p></div>' +
+      '<div><p class="detail-label">Baños</p><p class="detail-value">' + escapeHtml(property.baths) + '</p></div>' +
+      ownerRow +
+    '</div>' +
+    (property.description ? '<p class="detail-label">Descripción</p><p class="detail-desc">' + escapeHtml(property.description) + '</p>' : '') +
+    '<div class="detail-contact">' +
+      '<p class="detail-label" style="margin:0;">Contacto</p>' +
+      '<span class="detail-value">' + escapeHtml(whatsappLabel) + '</span>' +
+      '<a href="https://wa.me/' + whatsappDigits + '" target="_blank" rel="noopener" class="btn btn-accent btn-sm">Abrir WhatsApp</a>' +
+    '</div>';
+
+  detailModal.classList.remove('hidden');
+}
+
+function closePropertyDetail() { detailModal.classList.add('hidden'); }
+
+document.getElementById('property-detail-close').addEventListener('click', closePropertyDetail);
+detailModal.addEventListener('click', (e) => { if (e.target === detailModal) closePropertyDetail(); });
+
 /* ── Property form (create/edit) ── */
 const formModal = document.getElementById('property-form-modal');
 const propertyForm = document.getElementById('property-form');
@@ -261,7 +331,7 @@ function openPropertyForm(property) {
     isNewProperty = true;
     formState = {
       id: crypto.randomUUID(),
-      title: '', location: '', price: '', area: '', rooms: '', baths: '',
+      title: '', location: '', address: '', price: '', exchange_rate: '', area: '', rooms: '', baths: '',
       description: '', whatsapp: '', photos: [], status: 'available', featured: false,
     };
     document.getElementById('property-form-title-heading').textContent = 'Nueva propiedad';
@@ -278,6 +348,7 @@ function openPropertyForm(property) {
   document.getElementById('field-title').value = formState.title;
   citySelectEl.value = currentCity;
   document.getElementById('field-price').value = formState.price;
+  document.getElementById('field-exchange-rate').value = formState.exchange_rate || '';
   document.getElementById('field-area').value = formState.area;
   roomsSelect.value = formState.rooms;
   bathsSelect.value = formState.baths;
@@ -287,7 +358,7 @@ function openPropertyForm(property) {
   document.getElementById('field-featured').checked = !!formState.featured;
 
   renderPhotoGrid();
-  setUpLocationPicker(currentCity);
+  setUpLocationPicker(currentCity, formState.address);
   formModal.classList.remove('hidden');
   setTimeout(() => { if (locationMap) locationMap.invalidateSize(); }, 50);
 }
@@ -376,7 +447,9 @@ propertyForm.addEventListener('submit', async (e) => {
   const payload = {
     title: document.getElementById('field-title').value.trim(),
     location: cityValue ? cityValue + ', Bolivia' : '',
+    address: document.getElementById('location-search').value.trim() || null,
     price: document.getElementById('field-price').value.trim(),
+    exchange_rate: document.getElementById('field-exchange-rate').value.trim() || null,
     area: document.getElementById('field-area').value.trim(),
     rooms: document.getElementById('field-rooms').value.trim(),
     baths: document.getElementById('field-baths').value.trim(),
@@ -445,9 +518,13 @@ function guessCityFromAddress(address) {
   return address.city || address.town || address.village || address.municipality || address.county || address.state || '';
 }
 
-function applyGeocodedCity(address) {
+function applyGeocodedResult(r, opts) {
+  const updateCity = !opts || opts.updateCity !== false;
+  const updateAddress = !opts || opts.updateAddress !== false;
+  if (updateAddress && r.display_name) document.getElementById('location-search').value = r.display_name;
+  if (!updateCity) return;
   const hint = document.getElementById('location-map-hint');
-  const cityGuess = guessCityFromAddress(address);
+  const cityGuess = guessCityFromAddress(r.address || {});
   const matched = matchBoliviaCity(cityGuess);
   if (matched) {
     citySelectEl.value = matched;
@@ -473,7 +550,7 @@ async function searchLocation(query, opts) {
     }
     const r = results[0];
     placeMarker(parseFloat(r.lat), parseFloat(r.lon));
-    if (updateCity) applyGeocodedCity(r.address || {});
+    applyGeocodedResult(r, opts);
   } catch (err) {
     if (updateCity) alert('No se pudo buscar la ubicación (revisa tu conexión).');
   }
@@ -484,19 +561,20 @@ async function reverseGeocode(lat, lng) {
     const url = 'https://nominatim.openstreetmap.org/reverse?format=jsonv2&addressdetails=1&lat=' + lat + '&lon=' + lng;
     const res = await fetch(url, { headers: { 'Accept-Language': 'es' } });
     const r = await res.json();
-    applyGeocodedCity(r.address || {});
+    applyGeocodedResult(r);
   } catch (err) {
     document.getElementById('location-map-hint').textContent = 'No se pudo determinar la ciudad; selecciónala manualmente arriba.';
   }
 }
 
-function setUpLocationPicker(existingCity) {
+function setUpLocationPicker(existingCity, existingAddress) {
   ensureMapInit();
-  document.getElementById('location-search').value = '';
-  document.getElementById('location-map-hint').textContent = 'Si reconocemos la ciudad en el mapa, la seleccionamos automáticamente arriba.';
+  document.getElementById('location-search').value = existingAddress || '';
+  document.getElementById('location-map-hint').textContent = 'Escribe la dirección y presiona Buscar para ubicarla en el mapa, o haz clic directo en el mapa y la dirección se completa sola arriba.';
   if (locationMarker) { locationMap.removeLayer(locationMarker); locationMarker = null; }
   locationMap.setView(DEFAULT_MAP_CENTER, 12);
-  if (existingCity) searchLocation(existingCity + ', Bolivia', { updateCity: false });
+  const seed = existingAddress || (existingCity ? existingCity + ', Bolivia' : '');
+  if (seed) searchLocation(seed, { updateCity: false, updateAddress: false });
 }
 
 document.getElementById('location-search-btn').addEventListener('click', () => {

@@ -265,8 +265,10 @@ button { font-family: inherit; }
 .ring-card-label {
   position: absolute; left: 8px; top: 8px; padding: 5px 10px; border-radius: 4px;
   background: rgba(10,30,27,0.78); pointer-events: none;
+  display: flex; flex-direction: column; gap: 2px; max-width: calc(100% - 16px);
 }
 .ring-card-label span { font-size: 11px; color: var(--color-light); letter-spacing: 0.3px; }
+.ring-card-price { color: var(--color-accent) !important; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* ── Property modal ── */
 .property-modal-backdrop {
@@ -302,6 +304,7 @@ button { font-family: inherit; }
 .property-modal-location { font-size: 14px; color: var(--color-primary); opacity: 0.6; letter-spacing: 1px; margin: 0 0 6px; }
 .property-modal-title { font-family: var(--font-serif); font-size: clamp(28px,4vw,36px); font-weight: 600; color: var(--color-dark-text); margin: 0; }
 .property-modal-price { font-family: var(--font-serif); font-size: 24px; color: var(--color-primary); font-weight: 600; margin: 8px 0 0; }
+.property-modal-rate { font-size: 13px; color: var(--color-dark-text); opacity: 0.65; margin: 4px 0 0; }
 .property-modal-specs {
   display: flex; gap: 28px; flex-wrap: wrap; padding: 16px 0;
   border-top: 1px solid rgba(44,64,45,0.15); border-bottom: 1px solid rgba(44,64,45,0.15);

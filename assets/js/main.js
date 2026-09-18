@@ -179,9 +179,12 @@ function buildPropertyCard(property) {
   card.innerHTML = firstPhoto
     ? '<img class="ring-card-img" src="' + escapeHtml(firstPhoto) + '" alt="' + escapeHtml(property.title) + '" loading="lazy">'
     : placeholderImgHtml(property.title);
+  const priceLine = property.price
+    ? '<span class="ring-card-price">USD ' + escapeHtml(property.price) + (property.exchange_rate ? ' · ' + escapeHtml(property.exchange_rate) : '') + '</span>'
+    : '';
   card.innerHTML +=
     '<div class="ring-card-overlay"></div>' +
-    '<div class="ring-card-label"><span>' + (property.featured ? '★ ' : '') + escapeHtml(property.title) + '</span></div>';
+    '<div class="ring-card-label"><span>' + (property.featured ? '★ ' : '') + escapeHtml(property.title) + '</span>' + priceLine + '</div>';
   return card;
 }
 
@@ -298,7 +301,8 @@ function renderModal() {
       '<div>' +
         '<p class="property-modal-location">' + escapeHtml(p.location) + '</p>' +
         '<h3 class="property-modal-title">' + escapeHtml(p.title) + '</h3>' +
-        '<p class="property-modal-price">' + escapeHtml(p.price) + '</p>' +
+        '<p class="property-modal-price">USD ' + escapeHtml(p.price) + '</p>' +
+        (p.exchange_rate ? '<p class="property-modal-rate">Tipo de cambio aceptado: ' + escapeHtml(p.exchange_rate) + '</p>' : '') +
       '</div>' +
       '<div class="property-modal-specs">' +
         '<div><p class="property-modal-spec-label">Área</p><p class="property-modal-spec-value">' + escapeHtml(p.area) + '</p></div>' +

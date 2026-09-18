@@ -164,6 +164,19 @@ input, textarea, select { font-family: inherit; }
 .status-badge.available { background: rgba(44,64,45,0.12); color: var(--color-primary); }
 .status-badge.sold { background: rgba(179,64,47,0.12); color: #b3402f; }
 .property-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.property-row-clickable { cursor: pointer; }
+.property-row-clickable:hover { border-color: rgba(44,64,45,0.25); }
+
+/* ── Detalle de propiedad (modal de solo lectura) ── */
+.detail-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 20px; }
+.detail-header h2 { margin: 0; }
+.detail-photos { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 22px; }
+.detail-photos img { width: 96px; height: 96px; object-fit: cover; border-radius: 6px; background: #E8DDD6; }
+.detail-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap: 18px 24px; margin-bottom: 22px; }
+.detail-label { font-size: 11px; letter-spacing: 0.5px; text-transform: uppercase; color: #8a8272; margin: 0 0 4px; }
+.detail-value { font-size: 15px; color: var(--color-dark-text); margin: 0; font-weight: 500; }
+.detail-desc { font-size: 14px; line-height: 1.6; color: var(--color-dark-text); opacity: 0.85; margin: 0 0 22px; white-space: pre-wrap; }
+.detail-contact { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 
 /* ── Modal / form ── */
 .modal-overlay {

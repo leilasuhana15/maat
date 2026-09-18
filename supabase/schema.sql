@@ -7,12 +7,14 @@ create table if not exists public.properties (
   id           uuid primary key default gen_random_uuid(),
   title        text not null,
   location     text not null,
-  price        text not null,
+  price        text not null, -- siempre expresado en USD
+  exchange_rate text, -- tipo de cambio USD→Bs aceptado por el vendedor (opcional, texto libre)
   area         text not null,
   rooms        text not null,
   baths        text not null,
   description  text not null default '',
   photos       text[] not null default '{}',
+  address      text, -- dirección exacta (calle/zona), sincronizada con el mapa del panel; location sigue siendo solo la ciudad
   whatsapp     text, -- número de contacto específico de la propiedad; si es NULL, el landing usa el número general de la firma
   owner_id     uuid references auth.users(id) on delete set null, -- quién creó/es dueño de la propiedad
   featured     boolean not null default false, -- solo un administrador puede marcarla (ver trigger más abajo); aparece más veces en el carrusel
@@ -25,6 +27,8 @@ create table if not exists public.properties (
 alter table public.properties add column if not exists whatsapp text;
 alter table public.properties add column if not exists owner_id uuid references auth.users(id) on delete set null;
 alter table public.properties add column if not exists featured boolean not null default false;
+alter table public.properties add column if not exists address text;
+alter table public.properties add column if not exists exchange_rate text;
 
 create index if not exists properties_sort_order_idx on public.properties (sort_order);
 create index if not exists properties_status_idx on public.properties (status);
