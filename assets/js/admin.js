@@ -984,7 +984,8 @@ function renderUserList(users) {
   userListEl.innerHTML = '';
   users.forEach((user) => {
     const row = document.createElement('div');
-    row.className = 'user-row' + (user.is_active ? '' : ' is-inactive');
+    row.className = 'user-row user-row-clickable' + (user.is_active ? '' : ' is-inactive');
+    row.title = 'Ver propiedades publicadas por este usuario';
     const isSelf = currentSession && user.id === currentSession.user.id;
 
     row.innerHTML =
@@ -996,10 +997,13 @@ function renderUserList(users) {
       (isSelf ? '' : '<button type="button" class="btn btn-sm ' + (user.is_active ? 'btn-danger' : 'btn-ghost') + '" data-action="toggle">' + (user.is_active ? 'Desactivar' : 'Reactivar') + '</button>');
 
     const toggleBtn = row.querySelector('[data-action="toggle"]');
-    if (toggleBtn) toggleBtn.addEventListener('click', () => toggleUserActive(user));
+    if (toggleBtn) toggleBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleUserActive(user); });
 
     const roleSelect = row.querySelector('[data-action="role"]');
     if (roleSelect) roleSelect.addEventListener('change', () => changeUserRole(user, roleSelect));
+    if (roleSelect) roleSelect.addEventListener('click', (e) => e.stopPropagation());
+
+    row.addEventListener('click', () => openUserProperties(user));
 
     userListEl.appendChild(row);
   });
@@ -1027,6 +1031,59 @@ async function changeUserRole(user, selectEl) {
   selectEl.disabled = false;
   if (error) { alert('Error: ' + error.message); selectEl.value = user.role; return; }
   loadUsers();
+}
+
+/* ── Administradores: ver las propiedades publicadas por un usuario ── */
+const userPropertiesModal = document.getElementById('user-properties-modal');
+const userPropertiesTitleEl = document.getElementById('user-properties-title');
+const userPropertiesBodyEl = document.getElementById('user-properties-body');
+
+function closeUserProperties() { userPropertiesModal.classList.add('hidden'); }
+document.getElementById('user-properties-close').addEventListener('click', closeUserProperties);
+userPropertiesModal.addEventListener('click', (e) => { if (e.target === userPropertiesModal) closeUserProperties(); });
+
+async function openUserProperties(user) {
+  userPropertiesTitleEl.textContent = 'Propiedades de ' + (user.email || user.id);
+  userPropertiesBodyEl.innerHTML = '<p class="property-empty">Cargando…</p>';
+  userPropertiesModal.classList.remove('hidden');
+
+  const { data, error } = await supabaseClient
+    .from('properties')
+    .select('*')
+    .eq('owner_id', user.id)
+    .order('sort_order', { ascending: true });
+
+  if (error) {
+    userPropertiesBodyEl.innerHTML = '<p class="property-empty">Error al cargar: ' + escapeHtml(error.message) + '</p>';
+    return;
+  }
+  if (!data || !data.length) {
+    userPropertiesBodyEl.innerHTML = '<p class="property-empty">Este usuario todavía no publicó ninguna propiedad.</p>';
+    return;
+  }
+
+  userPropertiesBodyEl.innerHTML = '';
+  const list = document.createElement('div');
+  list.className = 'property-list';
+  data.forEach((property) => {
+    const row = document.createElement('div');
+    row.className = 'property-row property-row-clickable';
+    const thumb = (property.photos && property.photos[0])
+      ? '<img class="property-thumb" src="' + escapeHtml(property.photos[0]) + '" alt="">'
+      : '<div class="property-thumb-placeholder">BASTET</div>';
+    row.innerHTML =
+      (property.featured ? '<img class="property-featured-icon" src="../assets/img/bastet-icon-gold.png" alt="Destacada" style="flex-shrink:0;">' : '<span style="width:18px;flex-shrink:0;"></span>') +
+      thumb +
+      '<div class="property-info">' +
+        '<p class="property-info-title">' + escapeHtml(property.title) + '</p>' +
+        '<p class="property-info-meta">' + escapeHtml(property.location) + ' · ' + escapeHtml(property.area) + ' · ' + escapeHtml(property.rooms) + '</p>' +
+      '</div>' +
+      '<span class="property-price">' + formatPriceUSD(property.price) + '</span>' +
+      '<span class="status-badge ' + (property.status === 'sold' ? 'sold' : 'available') + '">' + (property.status === 'sold' ? 'Vendida' : 'Disponible') + '</span>';
+    row.addEventListener('click', () => { closeUserProperties(); openPropertyDetail(property); });
+    list.appendChild(row);
+  });
+  userPropertiesBodyEl.appendChild(list);
 }
 
 /* ── Mi cuenta: cambiar contraseña ── */
