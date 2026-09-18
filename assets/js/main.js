@@ -63,7 +63,7 @@ const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-m
    Reproduce la misma física: rotación automática + arrastre, con la tarjeta
    resuelta en pointerdown (no en el evento "click") para que no falle si el
    anillo se movió entre el down y el up. */
-function createRingCarousel({ stage, radius, size = 12, cull = 50, speed = 5, buildCard, onSelect, emptyText = 'Próximamente.' }) {
+function createRingCarousel({ stage, radius, size = 12, cull = 50, speed = 5, buildCard, onSelect, emptyText = 'Próximamente.', brightCenter = false }) {
   const step = 360 / size;
   let cards = [];
   let phase = -2;
@@ -85,7 +85,8 @@ function createRingCarousel({ stage, radius, size = 12, cull = 50, speed = 5, bu
       el.style.visibility = 'visible';
       const r = (a * Math.PI) / 180, c = Math.cos(r);
       el.style.transform = 'translate3d(' + (radius * Math.sin(r)).toFixed(1) + 'px,0,' + (radius * (1 - c)).toFixed(1) + 'px) rotateY(' + (-a).toFixed(1) + 'deg)';
-      el.style.filter = 'brightness(' + (0.72 + 0.5 * (1 / c - 1)).toFixed(3) + ')';
+      const brightness = brightCenter ? (1 - 0.8 * (1 / c - 1)) : (0.72 + 0.5 * (1 / c - 1));
+      el.style.filter = 'brightness(' + brightness.toFixed(3) + ')';
       el.style.zIndex = String(Math.round(1000 - Math.abs(a)));
     }
   }
@@ -436,6 +437,7 @@ const testimonialRing = testiRingStage ? createRingCarousel({
   size: TESTI_RING_SIZE,
   buildCard: buildTestimonialCard,
   emptyText: 'Pronto compartiremos las experiencias de nuestros clientes.',
+  brightCenter: true,
 }) : null;
 
 async function loadTestimonials() {
