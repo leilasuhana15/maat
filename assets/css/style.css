@@ -275,8 +275,28 @@ button { font-family: inherit; }
   width: 14px; height: 14px; object-fit: contain; flex-shrink: 0;
 }
 .ring-card--featured {
-  border-color: rgba(242,176,53,0.6);
-  box-shadow: 0 0 46px 10px rgba(242,176,53,0.45), 0 22px 44px rgba(0,0,0,0.55);
+  border-color: rgba(242,176,53,0.9);
+  box-shadow:
+    0 0 90px 24px rgba(242,176,53,0.75),
+    0 0 34px 6px rgba(242,176,53,1),
+    0 22px 44px rgba(0,0,0,0.55);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .ring-card--featured { animation: featuredGlowPulse 2.4s ease-in-out infinite; }
+}
+@keyframes featuredGlowPulse {
+  0%, 100% {
+    box-shadow:
+      0 0 90px 24px rgba(242,176,53,0.75),
+      0 0 34px 6px rgba(242,176,53,1),
+      0 22px 44px rgba(0,0,0,0.55);
+  }
+  50% {
+    box-shadow:
+      0 0 120px 34px rgba(242,176,53,0.95),
+      0 0 42px 10px rgba(242,176,53,1),
+      0 22px 44px rgba(0,0,0,0.55);
+  }
 }
 
 /* ── Property modal ── */
