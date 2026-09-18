@@ -62,6 +62,12 @@ Sitio estático (HTML/CSS/JS puro, sin build) para **Bastet**, inmobiliaria boli
 - ⚠️ No probado end-to-end contra el proyecto real: el flujo completo de un agente real viendo su dashboard restringido tras el rebrand (los cambios de color/marca no deberían afectar la lógica de roles, pero no se re-verificó explícitamente tras estos últimos cambios).
 - 🐛 **Nota de diseño (`.partners-strip`):** pasó por dos iteraciones. Primero fondo transparente puro — pero el `<body>` es crema y cada sección pinta su propio fondo (no hay fondo oscuro global), así que "transparente" mostraba una franja crema entre dos secciones verde oscuro. Luego se probó pintarla del mismo verde de sus vecinas. La versión final, pedida por la dueña tras ver los logos reales (varios con fondo blanco sólido, no transparente): franja blanca y delgada, para que combine con el fondo blanco que ya traen los logos en vez de pelear contra él.
 - 🐛 **Nota de entorno de pruebas:** el servidor local (`python -m http.server`, ver `.claude/launch.json`) a veces sirve JS desactualizado al navegador de pruebas por caché agresiva del propio navegador (no del servidor — confirmado con `curl` directo al puerto local, que siempre devolvió el archivo correcto). Si algo se ve "viejo" al probar localmente, verificar primero con `curl http://localhost:8080/...` antes de asumir que el código está mal.
+- ✅ **Sección de Testimonios (nueva) — landing + admin**:
+  - **Landing**: la vieja grilla estática de 3 testimonios se reemplazó por un carrusel de anillo 3D infinito, igual en física/interacción al de Propiedades. Se extrajo el motor del anillo a una factory genérica reutilizable, `createRingCarousel({...})` en `main.js`, y tanto Propiedades como Testimonios ahora se construyen sobre ella (antes el código del anillo estaba duplicado/acoplado solo a Propiedades). Cada tarjeta de testimonio muestra una **foto circular a la izquierda** + nombre/rol arriba y la cita debajo (`.testi-ring-card` en `style.css`).
+  - **Datos**: tabla `testimonials` nueva en `supabase/schema.sql` (con RLS: público solo ve `is_active=true`, solo admin puede insertar/editar/borrar) + bucket de Storage `testimonial-photos` (público de lectura, solo admin escribe). El script incluye un `insert ... on conflict (id) do nothing` con **10 testimonios semilla** (5 individuales + 5 "Familia X"), con `photo_url` apuntando a `assets/img/testimonials/testi-01.jpg` … `testi-10.jpg` — fotos de stock reales (no Supabase Storage; se sirven como archivos estáticos del propio repo, mismo patrón usado antes para los assets de marca).
+  - **Admin**: nueva pestaña **"Testimonios"** (solo admin, junto a Marcas y Administradores) con formulario para agregar (nombre, descripción breve, cita, foto opcional vía upload a `testimonial-photos`) y lista con reordenar por drag&drop (⠿) + eliminar (borra también la foto del bucket si la tenía). No tiene edición inline todavía — para corregir un testimonio hay que borrarlo y recrearlo.
+  - ⚠️ **Pendiente manual de la dueña**: el `supabase/schema.sql` actualizado **debe volver a correrse en el SQL Editor de Supabase** para que la tabla `testimonials`, sus políticas RLS, el bucket `testimonial-photos` y los 10 testimonios semilla existan en producción — igual que se hizo con `properties`/`profiles`/`partners` en su momento. Hasta que eso pase, la sección de Testimonios del landing mostrará el estado vacío ("Pronto compartiremos las experiencias de nuestros clientes.") porque la consulta a `testimonials` fallará (tabla inexistente).
+- ✅ **Cambio de rol de usuario desde el panel (nuevo)**: en la pestaña Administradores, cada usuario (menos uno mismo, para evitar bloquearse por error) ahora tiene un `<select>` Agente/Admin en vez de una etiqueta fija; cambiarlo pide confirmación y actualiza `profiles.role` directo (la política RLS `"admin can update profiles"` ya permitía esto, no hizo falta tocar el esquema). Antes solo se podía activar/desactivar acceso, no cambiar el rol sin editar la base de datos a mano.
 
 ## Arquitectura / mapa de archivos
 
@@ -72,12 +78,13 @@ assets/css/style.css         → estilos del landing
 assets/css/admin.css         → estilos del panel
 assets/js/supabase-config.js → credenciales de Supabase (URL + anon key, públicas por diseño)
 assets/js/bolivia-cities.js  → lista canónica de ciudades de Bolivia (compartida landing + admin)
-assets/js/main.js            → landing: fetch propiedades, carrusel 3D en anillo, modal con WhatsApp, franja de marcas
-assets/js/admin.js           → panel: auth+roles, tabs, CRUD propiedades (con owner_id/featured), marcas, invitar/gestionar usuarios, mi cuenta, mapa de ubicación
-supabase/schema.sql          → tablas properties + profiles (roles) + partners, funciones/triggers de permisos, políticas RLS, buckets property-photos + partner-logos
+assets/js/main.js            → landing: createRingCarousel() genérico (motor del anillo 3D), fetch+render propiedades y testimonios, modal con WhatsApp, franja de marcas
+assets/js/admin.js           → panel: auth+roles, tabs, CRUD propiedades (con owner_id/featured), marcas, testimonios, invitar/gestionar usuarios + cambio de rol, mi cuenta, mapa de ubicación
+supabase/schema.sql          → tablas properties + profiles (roles) + partners + testimonials, funciones/triggers de permisos, políticas RLS, buckets property-photos + partner-logos + testimonial-photos
 supabase/functions/invite-admin/index.ts → Edge Function para invitar administradores (usa service_role, server-side)
-assets/img/bastet-icon.svg   → ícono del gato (logo, usa currentColor — ver nota de rebranding en Estado actual)
-assets/img/favicon.svg       → mismo ícono, colores fijos, usado como favicon
+assets/img/bastet-gato-dorado.png / bastet-icon-verde.png / bastet-logo-completo.png → logos oficiales de marca (ver nota de rebranding en Estado actual)
+assets/img/favicon.png       → versión cuadrada con padding del ícono, usada como favicon (el ícono original es rectangular y se veía "achatado" si se usaba directo)
+assets/img/testimonials/testi-01.jpg … testi-10.jpg → fotos de stock para los testimonios semilla, servidas como archivos estáticos del repo (no Supabase Storage)
 assets/video/hero.mp4        → video de fondo del hero (loop ping-pong)
 SETUP.md                     → guía de puesta en marcha (crear proyecto, correr SQL, crear admin, desplegar function)
 .claude/launch.json          → server estático local para preview (python -m http.server 8080)
@@ -108,7 +115,8 @@ Después de cada commit + push a `main`:
 
 ## Próximos pasos sugeridos
 
-1. Confirmar que el agente ya invitado quede con su dashboard restringido correctamente en la práctica (login real, no solo simulado en local).
-2. Quitar la pantalla de registro temporal de `/admin`.
-3. Confirmar con la dueña el email de contacto del footer (sigue siendo el de "maatfirmalegal.sv", no se especificó uno nuevo en el brand book).
-4. Decidir si se incorpora el tagline oficial del brand book ("Propiedades que se cuidan como se cuida un hogar") al copy visible del hero/landing.
+1. **Correr el `supabase/schema.sql` actualizado en el SQL Editor de Supabase** para que la tabla `testimonials`, sus RLS, el bucket `testimonial-photos` y los 10 testimonios semilla queden creados en producción (ver nota en Estado actual sobre Testimonios).
+2. Confirmar que el agente ya invitado quede con su dashboard restringido correctamente en la práctica (login real, no solo simulado en local).
+3. Quitar la pantalla de registro temporal de `/admin`.
+4. Confirmar con la dueña el email de contacto del footer (sigue siendo el de "maatfirmalegal.sv", no se especificó uno nuevo en el brand book).
+5. Decidir si se incorpora el tagline oficial del brand book ("Propiedades que se cuidan como se cuida un hogar") al copy visible del hero/landing.
