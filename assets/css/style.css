@@ -283,15 +283,6 @@ button { font-family: inherit; }
   font-size: 11px; color: var(--color-light); letter-spacing: 0.2px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0;
 }
-.ring-card-agent-social { display: flex; gap: 4px; flex-shrink: 0; pointer-events: auto; }
-.ring-card-social-link {
-  width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0;
-  display: flex; align-items: center; justify-content: center;
-  background: rgba(242,176,53,0.18); color: var(--color-accent);
-  font-size: 9px; font-weight: 700; text-decoration: none; text-transform: uppercase;
-  border: 1px solid rgba(242,176,53,0.4);
-}
-.ring-card-social-link:hover { background: var(--color-accent); color: var(--color-primary); }
 .ring-card--featured {
   border-color: rgba(242,176,53,0.9);
   box-shadow:
@@ -359,6 +350,24 @@ button { font-family: inherit; }
 .property-modal-spec-label { font-size: 11px; letter-spacing: 1px; color: var(--color-primary); opacity: 0.6; margin: 0 0 4px; text-transform: uppercase; }
 .property-modal-spec-value { font-family: var(--font-serif); font-size: 18px; color: var(--color-dark-text); font-weight: 600; margin: 0; }
 .property-modal-desc { font-size: 15px; line-height: 1.7; color: var(--color-dark-text); opacity: 0.8; margin: 0; }
+.property-modal-agent {
+  display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 8px;
+  background: rgba(44,64,45,0.05); border: 1px solid rgba(44,64,45,0.1);
+}
+.property-modal-agent-avatar {
+  width: 44px; height: 44px; border-radius: 50%; object-fit: cover; flex-shrink: 0;
+  border: 2px solid var(--color-accent);
+}
+.property-modal-agent-avatar-placeholder {
+  display: flex; align-items: center; justify-content: center;
+  background: var(--color-primary); color: var(--color-accent); font-family: var(--font-serif); font-size: 18px; font-weight: 600;
+}
+.property-modal-agent-info { flex: 1; min-width: 0; }
+.property-modal-agent-label { font-size: 11px; letter-spacing: 0.5px; text-transform: uppercase; color: var(--color-primary); opacity: 0.6; margin: 0 0 2px; }
+.property-modal-agent-name { font-size: 15px; font-weight: 600; color: var(--color-dark-text); margin: 0; }
+.property-modal-agent-social { display: flex; gap: 8px; flex-shrink: 0; }
+.property-modal-social-link { width: 30px; height: 30px; flex-shrink: 0; }
+.property-modal-social-link img { width: 100%; height: 100%; border-radius: 50%; }
 
 /* ── Features ── */
 .features-section { background: var(--color-primary); padding: 120px clamp(20px,6vw,48px); width: 100%; }

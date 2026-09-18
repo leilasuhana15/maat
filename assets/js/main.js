@@ -198,33 +198,30 @@ function buildPropertyCard(property) {
       priceLine +
     '</div>' +
     buildAgentBadgeHtml(property.agent);
-
-  const badgeEl = card.querySelector('.ring-card-agent');
-  if (badgeEl) {
-    badgeEl.querySelectorAll('a[data-social]').forEach((link) => {
-      link.addEventListener('pointerdown', (e) => e.stopPropagation());
-    });
-  }
   return card;
 }
 
+// Solo avatar + nombre (sin redes: las redes se ven en el modal al abrir la propiedad).
 function buildAgentBadgeHtml(agent) {
   if (!agent || (!agent.display_name && !agent.avatar_url)) return '';
   const initial = (agent.display_name || '?').trim().charAt(0).toUpperCase();
   const avatar = agent.avatar_url
     ? '<img class="ring-card-agent-avatar" src="' + escapeHtml(agent.avatar_url) + '" alt="">'
     : '<span class="ring-card-agent-avatar ring-card-agent-avatar-placeholder">' + escapeHtml(initial) + '</span>';
-  const socialLink = (url, label) => url
-    ? '<a class="ring-card-social-link" data-social href="' + escapeHtml(url) + '" target="_blank" rel="noopener" aria-label="' + label + '">' + label.charAt(0) + '</a>'
-    : '';
-  const socials = socialLink(agent.facebook_url, 'Facebook') + socialLink(agent.instagram_url, 'Instagram') + socialLink(agent.tiktok_url, 'TikTok');
   return (
     '<div class="ring-card-agent">' +
       avatar +
       '<span class="ring-card-agent-name">' + escapeHtml(agent.display_name || '') + '</span>' +
-      (socials ? '<span class="ring-card-agent-social">' + socials + '</span>' : '') +
     '</div>'
   );
+}
+
+// Ícono de red social como badge circular con el logo real (assets/img/social-*.svg).
+function socialIconLink(url, kind, label) {
+  if (!url) return '';
+  return '<a class="property-modal-social-link" href="' + escapeHtml(url) + '" target="_blank" rel="noopener" aria-label="' + label + '">' +
+    '<img src="assets/img/social-' + kind + '.svg" alt="' + label + '">' +
+  '</a>';
 }
 
 const propertyRing = createRingCarousel({
@@ -333,6 +330,28 @@ function closeProperty() {
   modalBackdrop.classList.add('hidden');
 }
 
+function buildAgentSectionHtml(agent) {
+  if (!agent || (!agent.display_name && !agent.avatar_url)) return '';
+  const initial = (agent.display_name || '?').trim().charAt(0).toUpperCase();
+  const avatar = agent.avatar_url
+    ? '<img class="property-modal-agent-avatar" src="' + escapeHtml(agent.avatar_url) + '" alt="">'
+    : '<span class="property-modal-agent-avatar property-modal-agent-avatar-placeholder">' + escapeHtml(initial) + '</span>';
+  const socials =
+    socialIconLink(agent.facebook_url, 'facebook', 'Facebook') +
+    socialIconLink(agent.instagram_url, 'instagram', 'Instagram') +
+    socialIconLink(agent.tiktok_url, 'tiktok', 'TikTok');
+  return (
+    '<div class="property-modal-agent">' +
+      avatar +
+      '<div class="property-modal-agent-info">' +
+        '<p class="property-modal-agent-label">Publicado por</p>' +
+        '<p class="property-modal-agent-name">' + escapeHtml(agent.display_name || '') + '</p>' +
+      '</div>' +
+      (socials ? '<span class="property-modal-agent-social">' + socials + '</span>' : '') +
+    '</div>'
+  );
+}
+
 function renderModal() {
   if (!selectedProperty) return;
   const p = selectedProperty;
@@ -369,6 +388,7 @@ function renderModal() {
         '<div><p class="property-modal-spec-label">Baños</p><p class="property-modal-spec-value">' + escapeHtml(p.baths) + '</p></div>' +
       '</div>' +
       '<p class="property-modal-desc">' + escapeHtml(p.description) + '</p>' +
+      buildAgentSectionHtml(p.agent) +
       '<a class="cta-button cta-button--block" style="margin-top:8px;" href="' + whatsappUrl(message, p.whatsapp) + '" target="_blank" rel="noopener"><span>Consultar por WhatsApp</span></a>' +
     '</div>';
 
