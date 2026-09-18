@@ -42,6 +42,8 @@ function traduceAuthError(message) {
 /* ── View switching ── */
 const views = {
   login: document.getElementById('view-login'),
+  forgot: document.getElementById('view-forgot'),
+  reset: document.getElementById('view-reset'),
   dashboard: document.getElementById('view-dashboard'),
 };
 function showView(name) {
@@ -68,10 +70,78 @@ loginForm.addEventListener('submit', async (e) => {
 
 document.getElementById('logout-btn').addEventListener('click', () => supabaseClient.auth.signOut());
 
+/* ── Recuperar contraseña ── */
+document.getElementById('go-to-forgot').addEventListener('click', (e) => {
+  e.preventDefault();
+  document.getElementById('forgot-error').classList.add('hidden');
+  document.getElementById('forgot-success').classList.add('hidden');
+  showView('forgot');
+});
+document.getElementById('go-to-login-from-forgot').addEventListener('click', (e) => {
+  e.preventDefault();
+  showView('login');
+});
+
+const forgotForm = document.getElementById('forgot-form');
+const forgotError = document.getElementById('forgot-error');
+const forgotSuccess = document.getElementById('forgot-success');
+forgotForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  forgotError.classList.add('hidden');
+  forgotSuccess.classList.add('hidden');
+  const email = document.getElementById('forgot-email').value.trim();
+  const btn = document.getElementById('forgot-submit');
+  btn.disabled = true;
+  const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin + window.location.pathname,
+  });
+  btn.disabled = false;
+  if (error) {
+    forgotError.textContent = traduceAuthError(error.message);
+    forgotError.classList.remove('hidden');
+    return;
+  }
+  forgotSuccess.textContent = 'Te enviamos un correo a ' + email + ' con un enlace para crear una nueva contraseña.';
+  forgotSuccess.classList.remove('hidden');
+  forgotForm.reset();
+});
+
+const resetForm = document.getElementById('reset-form');
+const resetError = document.getElementById('reset-error');
+resetForm.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  resetError.classList.add('hidden');
+  const password = document.getElementById('reset-password').value;
+  const confirmPassword = document.getElementById('reset-password-confirm').value;
+  if (password !== confirmPassword) {
+    resetError.textContent = 'Las contraseñas no coinciden.';
+    resetError.classList.remove('hidden');
+    return;
+  }
+  const btn = document.getElementById('reset-submit');
+  btn.disabled = true;
+  const { error } = await supabaseClient.auth.updateUser({ password });
+  btn.disabled = false;
+  if (error) {
+    resetError.textContent = traduceAuthError(error.message);
+    resetError.classList.remove('hidden');
+    return;
+  }
+  resetForm.reset();
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  handleSession(session);
+});
+
 async function init() {
   const { data: { session } } = await supabaseClient.auth.getSession();
   handleSession(session);
-  supabaseClient.auth.onAuthStateChange((_event, newSession) => handleSession(newSession));
+  supabaseClient.auth.onAuthStateChange((event, newSession) => {
+    if (event === 'PASSWORD_RECOVERY') {
+      showView('reset');
+      return;
+    }
+    handleSession(newSession);
+  });
 }
 
 let currentSession = null;
