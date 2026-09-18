@@ -38,8 +38,8 @@ input, textarea, select { font-family: inherit; }
   box-shadow: 0 24px 60px rgba(0,0,0,0.35);
 }
 .auth-logo { text-align: center; margin-bottom: 28px; }
-.auth-logo-icon { display: inline-block; width: 30px; height: 36px; color: var(--color-primary); margin-bottom: 8px; }
-.auth-logo-icon svg { width: 100%; height: 100%; display: block; }
+.auth-logo-icon { display: inline-block; width: 40px; height: 40px; margin-bottom: 8px; }
+.auth-logo-icon img { width: 100%; height: 100%; object-fit: contain; display: block; }
 .auth-logo-main { display: block; font-family: var(--font-serif); font-size: 30px; font-weight: 600; color: var(--color-primary); }
 .auth-logo-sub { display: block; font-size: 10px; letter-spacing: 2.5px; color: var(--color-secondary); margin-top: 2px; }
 .auth-title { font-family: var(--font-serif); font-size: 22px; font-weight: 600; margin: 0 0 20px; text-align: center; }
@@ -106,8 +106,8 @@ input, textarea, select { font-family: inherit; }
   position: sticky; top: 0; z-index: 50;
 }
 .admin-logo { display: flex; align-items: center; gap: 8px; line-height: 1; }
-.admin-logo-icon { width: 20px; height: 24px; color: var(--color-accent); flex-shrink: 0; }
-.admin-logo-icon svg { width: 100%; height: 100%; display: block; }
+.admin-logo-icon { width: 30px; height: 30px; flex-shrink: 0; }
+.admin-logo-icon img { width: 100%; height: 100%; object-fit: contain; display: block; }
 .admin-logo-text { display: flex; flex-direction: column; }
 .admin-logo-main { font-family: var(--font-serif); font-size: 22px; font-weight: 600; color: var(--color-accent); }
 .admin-logo-sub { font-size: 8px; letter-spacing: 2px; color: var(--color-light); opacity: 0.7; margin-top: 2px; }
