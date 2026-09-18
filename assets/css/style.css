@@ -10,13 +10,14 @@
 }
 
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; overflow-x: hidden; width: 100%; }
 body {
   margin: 0;
   font-family: var(--font-sans);
   background: var(--color-light);
   color: var(--color-dark-text);
   overflow-x: hidden;
+  width: 100%;
 }
 img { max-width: 100%; display: block; }
 a { color: inherit; }
@@ -223,7 +224,7 @@ button { font-family: inherit; }
   border-color: var(--color-accent); background: var(--color-accent); color: var(--color-primary); font-weight: 600;
 }
 .ring-stage {
-  position: relative; height: 600px;
+  position: relative; height: 600px; width: 100%;
   perspective: 1000px; perspective-origin: 50% 62%;
   touch-action: pan-y; cursor: grab; user-select: none;
 }
@@ -354,7 +355,7 @@ button { font-family: inherit; }
 /* ── Testimonials ── */
 .testimonials-section { background: var(--color-light); padding: 120px clamp(20px,6vw,48px); }
 .testi-ring-stage {
-  position: relative; height: 460px; max-width: 1200px; margin: 0 auto;
+  position: relative; height: 460px; max-width: 1200px; width: 100%; margin: 0 auto;
   perspective: 1200px; perspective-origin: 50% 55%;
   touch-action: pan-y; cursor: grab; user-select: none;
 }
